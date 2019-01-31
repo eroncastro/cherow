@@ -51,7 +51,7 @@ export function parseStatementList(state: ParserState, context: Context, scope: 
   const statements: ESTree.Statement[] = [];
   while (state.token === Token.StringLiteral) {
     const tokenValue = state.tokenValue;
-    if (!(context & Context.Strict) && tokenValue.length === 10 && tokenValue === 'use strict') {
+    if (tokenValue.length === 10 && tokenValue === 'use strict') {
       context |= Context.Strict;
     }
     statements.push(parseDirective(state, context, scope));
