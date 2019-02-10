@@ -1,15 +1,15 @@
-// Unicode v. 11 support
-// tslint:disable
+import { Chars, CharType, AsciiLookup } from './chars';
 
-function isIDContinue(code: number) {
-  return ((unicodeLookup[(code >>> 5) + 0] >>> code) & 31 & 1) !== 0;
+/*@internal*/
+export function isIdentifierPart(code: Chars): boolean {
+  return (AsciiLookup[code] & CharType.IDContinue) > 0 || ((unicodeLookup[(code >>> 5) + 0] >>> code) & 31 & 1) > 0;
 }
-function isIDStart(code: number) {
-  return ((unicodeLookup[(code >>> 5) + 34816] >>> code) & 31 & 1) !== 0;
+
+/*@internal*/
+export function isIdentifierStart(code: Chars): boolean {
+  return (AsciiLookup[code] & CharType.IDStart) > 0 || ((unicodeLookup[(code >>> 5) + 34816] >>> code) & 31 & 1) > 0;
 }
-function mustEscape(code: number) {
-  return ((unicodeLookup[(code >>> 5) + 69632] >>> code) & 31 & 1) !== 0;
-}
+
 export const unicodeLookup = ((compressed, lookup) => {
   const result = new Uint32Array(104448);
   let index = 0;
@@ -3627,4 +3627,3 @@ export const unicodeLookup = ((compressed, lookup) => {
     65532
   ]
 );
-export { isIDContinue, isIDStart, mustEscape };
