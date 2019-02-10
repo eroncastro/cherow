@@ -95,7 +95,7 @@ export function scanIdentifierOrKeyword(state: ParserState, context: Context): T
   let scanFlags = AsciiLookup[state.currentChar];
   while (state.index < state.length) {
     const charFlags = AsciiLookup[state.currentChar];
-    scanFlags |= state.currentChar > 127 ? CharType.SlowPath : charFlags;
+    scanFlags = scanFlags | (state.currentChar > 127 ? CharType.SlowPath : charFlags);
     if (scanFlags & (CharType.SlowPath | CharType.WhiteSpace)) break;
     nextChar(state);
   }
@@ -133,15 +133,14 @@ function scanIdentifierOrKeywordSlowPath(
   res: string,
   scanFlags: CharType
 ): Token {
-  let identStart = state.index;
-
+  let marker = state.index;
   while (state.index < state.length) {
     if (state.currentChar === Chars.Backslash) {
-      res += state.source.substring(identStart, state.index);
+      res += state.source.substring(marker, state.index);
       const cookedChar = scanIdentifierUnicodeEscape(state, context);
       if (!isIdentifierPart(cookedChar)) return Token.Invalid;
       res += String.fromCodePoint(cookedChar);
-      identStart = state.index;
+      marker = state.index;
     } else if (isIdentifierPart(state.currentChar)) {
       nextChar(state);
     } else {
@@ -149,12 +148,11 @@ function scanIdentifierOrKeywordSlowPath(
     }
   }
 
-  state.tokenValue = res += state.source.substring(identStart, state.index);
+  state.tokenValue = res += state.source.substring(marker, state.index);
 
-  if (
-    (scanFlags & CharType.KeywordCandidate) === CharType.KeywordCandidate &&
-    (state.tokenValue.length >= 2 && state.tokenValue.length <= 11)
-  ) {
+  const length = state.tokenValue.length;
+
+  if ((scanFlags & CharType.KeywordCandidate) === CharType.KeywordCandidate && (length >= 2 && length <= 11)) {
     const keyword: Token | undefined = descKeywordTable[state.tokenValue];
 
     if (keyword === undefined) return Token.Identifier;

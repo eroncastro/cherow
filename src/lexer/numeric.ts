@@ -23,7 +23,6 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
   let leadingErrPos = marker;
 
   if (!isFloat) {
-    // if ((AsciiLookup[state.currentChar] & CharType.LeadingDecimal) !== 0) {
     if (state.currentChar === Chars.Zero) {
       nextChar(state);
       const lowerCasedLetters = state.currentChar | 32;
@@ -60,7 +59,7 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
     if (isNotFloat) {
       let digit = 9;
       while (AsciiLookup[state.currentChar] & CharType.Decimal && digit >= 0) {
-        state.tokenValue = 10 * (state.tokenValue as number) + (state.currentChar - Chars.Zero);
+        state.tokenValue = 0xa * (state.tokenValue as number) + (state.currentChar - Chars.Zero);
         nextChar(state);
         --digit;
       }
@@ -94,7 +93,7 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
 
     nextChar(state);
   } else if ((state.currentChar | 32) === Chars.LowerE) {
-    if ((kind & (ScannerFlags.Decimal | ScannerFlags.LeadingDecimal)) === 0) {
+    if ((kind & (ScannerFlags.Decimal | ScannerFlags.LeadingDecimal)) < 1) {
       reportAt(state, marker, state.line, state.column, Errors.StrictDecimalWithLeadingZero);
     }
     nextChar(state);
@@ -129,7 +128,7 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
       kind & ScannerFlags.LeadingDecimal
         ? parseFloat(state.source.slice(marker, state.index))
         : isBigInt
-        ? parseInt(state.source.slice(marker, state.index), 10)
+        ? parseInt(state.source.slice(marker, state.index), 0xa)
         : +state.source.slice(marker, state.index);
   }
 

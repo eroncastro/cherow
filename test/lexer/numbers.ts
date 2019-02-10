@@ -332,17 +332,17 @@ describe('lexer - numbers', () => {
     end: 63
   });
 
-  pass('scan 7890', {
-    source: '7890',
+  pass('scan 4.4501477170144020250819966727949918635852426585926051135169509', {
+    source: '4.4501477170144020250819966727949918635852426585926051135169509',
     ctx: Context.None,
     token: Token.NumericLiteral,
-    value: 7890,
+    value: 4.450147717014402,
     raw: '7890',
     newline: false,
     line: 1,
-    column: 4,
+    column: 63,
     start: 0,
-    end: 4
+    end: 63
   });
 
   pass('scan 08', {

@@ -1,6 +1,6 @@
 import { Token } from '../token';
 import { reportAt, Errors } from '../errors';
-import { Chars } from '../chars';
+import { Chars, CharType, AsciiLookup } from '../chars';
 import { Context } from '../common';
 import { ParserState } from '../common';
 import { Escape, nextChar, fromCodePoint } from './common';
@@ -36,7 +36,7 @@ export function scanTemplate(state: ParserState, context: Context, fromTick: boo
       return (fromTick ? Token.NoSubstitutionTemplate : Token.TemplateTail) | (hasBadEscapes ? Token.BadEscape : 0);
     }
 
-    if (state.currentChar === Chars.Backslash) {
+    if (AsciiLookup[state.currentChar] & CharType.SlowPath) {
       nextChar(state);
       const code = scanEscape(state, context, /* isTemplate */ true);
       // For raw template literal syntax, we have already consumed `NotEscapeSequence`,

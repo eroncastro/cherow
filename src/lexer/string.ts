@@ -1,10 +1,9 @@
-import { Token, descKeywordTable } from '../token';
+import { Token } from '../token';
 import { reportAt, Errors } from '../errors';
-import { isIdentifierStart, isIdentifierPart } from '../unicode';
 import { Chars, CharType, AsciiLookup } from '../chars';
 import { Context } from '../common';
 import { ParserState } from '../common';
-import { ScannerFlags, Escape, nextChar, toHex, getMostLikelyUnicodeChar, fromCodePoint } from './common';
+import { Escape, nextChar, toHex, fromCodePoint } from './common';
 
 /**
  * Scans string literal
@@ -26,21 +25,20 @@ export function scanStringLiteral(state: ParserState, context: Context): Token |
       return Token.StringLiteral;
     }
 
-    if (state.currentChar === Chars.Backslash) {
+    // TODO: Rename 'SlowPath' to backslash?
+    if (AsciiLookup[state.currentChar] & CharType.SlowPath) {
       state.tokenValue += state.source.slice(marker, state.index);
       nextChar(state);
       const code = scanEscape(state, context, /* isTemplate */ false);
-      if (code < 0) return Token.Invalid;
+      if (code < 0) return Token.Invalid; // Note: This will throw in the parser
       state.tokenValue += fromCodePoint(code);
       marker = state.index;
       continue;
     }
 
-    // Fast check for characters that require special handling.
-    if (
-      (state.currentChar - 0xe) & 0x2000 &&
-      (state.currentChar === Chars.CarriageReturn || state.currentChar === Chars.LineFeed)
-    ) {
+    // Optimized to make JSON subset of JS, and it also do a
+    // fast check for characters that require special handling.
+    if (state.currentChar - 0xe && AsciiLookup[state.currentChar] & CharType.LineTerminator) {
       break;
     }
 
@@ -53,7 +51,6 @@ export function scanStringLiteral(state: ParserState, context: Context): Token |
 /**
  * Scans string and template escapes
  *
- * @export
  * @param {ParserState} state
  * @param {Context} context
  * @param {boolean} isTemplate

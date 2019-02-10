@@ -9,8 +9,9 @@ export const enum CharType {
   NoKeywordCandidate = 1 << 4,
   Exponent = 1 << 5,
   SlowPath = 1 << 6,
-  WhiteSpace = 1 << 7,
+  LineTerminator = 1 << 7,
   LeadingDecimal = 1 << 8,
+  WhiteSpace = 1 << 9 | LineTerminator,
   Letters = IDContinue | IDStart,
 }
 
@@ -20,15 +21,14 @@ export const AsciiLookup = new Uint8Array(0x80)
   .fill(CharType.WhiteSpace, 0x20, 0x21) /* space */
   .fill(CharType.WhiteSpace, 0x9, 0xA) /* horizontal tab */
   .fill(CharType.WhiteSpace, 0xB, 0xC) /* vertical tab */
-  .fill(CharType.WhiteSpace, 0xD, 0xE) /* carriage return */
+  .fill(CharType.LineTerminator, 0xD, 0xE) /* carriage return */
   .fill(CharType.WhiteSpace, 0xC, 0xD) /* form feed */
-  .fill(CharType.WhiteSpace, 0xA, 0xB) /* line feed */
+  .fill(CharType.LineTerminator, 0xA, 0xB) /* line feed */
   .fill(CharType.Exponent, 0x2B, 0x2C) /* + */
   .fill(CharType.Exponent, 0x2D, 0x2E) /* - */
   .fill(CharType.Letters, 0x24, 0x25) /* $ */
   .fill(CharType.SlowPath , 0x5C, 0x5D) /* \ */
-  .fill(CharType.Decimal | CharType.LeadingDecimal, 0x30, 0x31) /* 0 */
-  .fill(CharType.Decimal, 0x31, 0x3a) /* 1-9 */
+  .fill(CharType.Decimal, 0x30, 0x3a) /* 0 - 9 */
   .fill(CharType.Letters | CharType.NoKeywordCandidate, 0x41, 0x5b) /* A-Z */
   .fill(CharType.Letters, 0x5f, 0x60) /* _ */
   .fill(CharType.Letters | CharType.KeywordCandidate, 0x61, 0x7b); /* a-z */

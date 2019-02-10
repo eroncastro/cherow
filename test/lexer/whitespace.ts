@@ -39,7 +39,7 @@ describe('src/scanner/seek', () => {
 
   fail('fails on unclosed multi line comment', '/** ', Context.Strict);
   //fail('fails on unclosed multi line comment', '//\m ', Context.Strict);
-  //fail('fails on unclosed multi line comment', '\u180Ef', Context.Strict);
+  fail('fails on unclosed multi line comment', '\u180Ef', Context.Strict);
 
   pass('skips nothing', {
     source: '',
@@ -91,6 +91,30 @@ describe('src/scanner/seek', () => {
 
     line: 1,
     column: 8
+  });
+
+  pass('skips vertical tabs', {
+    source: '\u2007',
+    token: Token.EndOfSource,
+    value: '',
+    raw: '',
+    newline: false,
+    start: 1,
+    end: 1,
+    line: 1,
+    column: 1
+  });
+
+  pass('skips mixed exotic whitespace', {
+    source: '\u2007\u000B\u202F\u3000\u1680\u2000',
+    token: Token.EndOfSource,
+    value: '',
+    raw: '',
+    newline: false,
+    start: 1,
+    end: 6,
+    line: 1,
+    column: 6
   });
 
   passAll(

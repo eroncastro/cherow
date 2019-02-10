@@ -34,24 +34,24 @@ oneCharTokens[Chars.Semicolon] = Token.Semicolon;
  * @returns {(Token | void)}
  */
 function scanSingleToken(state: ParserState, context: Context): Token | void {
-  // One char punctuator lookup
-  const token = oneCharTokens[state.currentChar];
+  if (state.currentChar <= 0x7f) {
+    // One char punctuator lookup
+    const oneCharToken = oneCharTokens[state.currentChar];
 
-  if (token > 0) {
-    nextChar(state);
-    return token;
-  }
+    if (oneCharToken > 0) {
+      nextChar(state);
+      return oneCharToken;
+    }
 
-  // `a`...`z`, `A`...`Z`, `_`, `$`
-  if (AsciiLookup[state.currentChar & 0xffdf /* clear 0x20 */] & CharType.Letters) {
-    return scanIdentifierOrKeyword(state, context);
-  }
+    // `a`...`z`, `A`...`Z`, `_`, `$`
+    if (AsciiLookup[state.currentChar] & CharType.Letters) {
+      return scanIdentifierOrKeyword(state, context);
+    }
 
-  if (AsciiLookup[state.currentChar] & CharType.Decimal) {
-    return scanNumericLiterals(state, context, false);
-  }
-
-  if (state.currentChar >= 128) {
+    if (AsciiLookup[state.currentChar] & CharType.Decimal) {
+      return scanNumericLiterals(state, context, false);
+    }
+  } else {
     return scanMaybeIdentifier(state) as Token;
   }
 
