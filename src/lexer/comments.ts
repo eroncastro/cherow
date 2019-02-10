@@ -13,15 +13,15 @@ import { ScannerFlags, nextChar } from './common';
  */
 export function skipMultilineComment(state: ParserState): Token | void {
   while (state.index < state.length) {
-    const next = state.source.charCodeAt(state.index);
+    const next = state.currentChar;
     if ((next - 0xe) & 0x2000) {
       if (next === Chars.CarriageReturn) {
         state.flags |= ScannerFlags.PrecedingLineBreak | ScannerFlags.LastIsCR;
-        state.index++;
+        state.currentChar = state.source.charCodeAt(++state.index);
         state.column = 0;
         state.line++;
       } else if (next === Chars.LineFeed) {
-        state.index++;
+        state.currentChar = state.source.charCodeAt(++state.index);
         if ((state.flags & ScannerFlags.LastIsCR) === 0) {
           state.column = 0;
           state.line++;
@@ -29,7 +29,7 @@ export function skipMultilineComment(state: ParserState): Token | void {
         state.flags = (state.flags & ~ScannerFlags.LastIsCR) | ScannerFlags.PrecedingLineBreak;
       } else if ((state.currentChar ^ Chars.ParagraphSeparator) <= 1) {
         state.flags = (state.flags & ~ScannerFlags.LastIsCR) | ScannerFlags.PrecedingLineBreak;
-        state.index++;
+        state.currentChar = state.source.charCodeAt(++state.index);
         state.column = 0;
         state.line++;
       }
@@ -57,10 +57,10 @@ export function skipMultilineComment(state: ParserState): Token | void {
  */
 export function skipSingleLineComment(state: ParserState): Token {
   while (state.index < state.source.length) {
-    const next = state.source.charCodeAt(state.index);
+    const next = state.currentChar;
     if ((next - 0xe) & 0x2000) {
       if (next === Chars.CarriageReturn) {
-        state.index++;
+        state.currentChar = state.source.charCodeAt(++state.index);
         state.column = 0;
         state.line++;
         if (state.index < state.source.length && state.source.charCodeAt(state.index) === Chars.LineFeed) state.index++;
@@ -69,13 +69,12 @@ export function skipSingleLineComment(state: ParserState): Token {
       } else if (next === Chars.LineFeed || (next ^ Chars.ParagraphSeparator) <= 1) {
         state.flags |= ScannerFlags.PrecedingLineBreak;
         ++state.line;
-        ++state.index;
+        state.currentChar = state.source.charCodeAt(++state.index);
         state.column = 0;
         return Token.WhiteSpace;
       }
     }
-    ++state.column;
-    ++state.index;
+    nextChar(state);
   }
 
   return Token.WhiteSpace;
