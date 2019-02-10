@@ -2,7 +2,7 @@ import { Token } from '../token';
 import { reportAt, Errors } from '../errors';
 import { isIdentifierStart } from '../unicode';
 import { Chars, AsciiLookup, CharType } from '../chars';
-import { Context } from '../common';
+import { Context, fromCodePoint } from '../common';
 import { ParserState } from '../common';
 import { ScannerFlags, Escape, nextChar, toHex } from './common';
 
@@ -92,17 +92,18 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
     }
     nextChar(state);
 
-    if ((state.currentChar as number) === Chars.Plus || (state.currentChar as number) === Chars.Hyphen) {
+    // '_', '+'
+    if (AsciiLookup[state.currentChar] & CharType.Exponent) {
       nextChar(state);
     }
-    let digits = 0;
+
+    // we must have at least one decimal digit after 'e'/'E'
+    if ((AsciiLookup[state.currentChar] & CharType.Decimal) < 1)
+      reportAt(state, marker, state.line, state.index, Errors.MissingExponent);
 
     while (AsciiLookup[state.currentChar] & CharType.Decimal) {
       nextChar(state);
-      digits++;
     }
-    // we must have at least one decimal digit after 'e'/'E'
-    if (digits < 1) reportAt(state, marker, state.line, state.column, Errors.MissingExponent);
   }
 
   // This case is only to prevent `3in x` and `3instanceof x` cases.

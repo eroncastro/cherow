@@ -7,10 +7,9 @@ export const enum CharType {
   Decimal = 1 << 2,
   CanBeKeyword = 1 << 3,
   CannotBeKeyword = 1 << 4,
-  CannotBeKeywordStart = 1 << 5,
+  Exponent = 1 << 5,
   SlowPath = 1 << 6,
   WhiteSpace = 1 << 7,
-  Exponent = 1 << 8,
   Letters = IDContinue | IDStart,
 }
 
@@ -18,13 +17,13 @@ export const enum CharType {
 export const AsciiLookup = new Uint8Array(0x80)
 
   .fill(CharType.WhiteSpace, 0x20, 0x21) /* space */
-  .fill(CharType.Exponent, 0x2b, 0x2c) /* + */
-  .fill(CharType.Exponent, 0x2D, 0x2e) /* - */
-  .fill(CharType.Letters | CharType.CannotBeKeywordStart, 0x24, 0x25) /* $ */
+  .fill(CharType.Exponent, 0x2B, 0x2C) /* + */
+  .fill(CharType.Exponent, 0x2D, 0x2E) /* - */
+  .fill(CharType.Letters, 0x24, 0x25) /* $ */
   .fill(CharType.SlowPath , 0x5C, 0x5D) /* \ */
   .fill(CharType.Decimal, 0x30, 0x3a) /* 0-9 */
   .fill(CharType.Letters | CharType.CannotBeKeyword, 0x41, 0x5b) /* A-Z */
-  .fill(CharType.Letters | CharType.CannotBeKeywordStart, 0x5f, 0x60) /* _ */
+  .fill(CharType.Letters, 0x5f, 0x60) /* _ */
   .fill(CharType.Letters | CharType.CanBeKeyword, 0x61, 0x7b); /* a-z */
 
 /**
