@@ -103,7 +103,7 @@ export function scanIdentifierOrKeyword(state: ParserState, context: Context): T
   state.tokenValue = state.source.slice(state.startIndex, state.index);
 
   if ((scanFlags & CharType.SlowPath) !== CharType.SlowPath) {
-    if ((scanFlags & CharType.CannotBeKeyword) === CharType.CannotBeKeyword) {
+    if ((scanFlags & CharType.NoKeywordCandidate) === CharType.NoKeywordCandidate) {
       return Token.Identifier;
     }
 
@@ -152,7 +152,7 @@ function scanIdentifierOrKeywordSlowPath(
   state.tokenValue = res += state.source.substring(identStart, state.index);
 
   if (
-    (scanFlags & CharType.CanBeKeyword) === CharType.CanBeKeyword &&
+    (scanFlags & CharType.KeywordCandidate) === CharType.KeywordCandidate &&
     (state.tokenValue.length >= 2 && state.tokenValue.length <= 11)
   ) {
     const keyword: Token | undefined = descKeywordTable[state.tokenValue];

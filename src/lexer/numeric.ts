@@ -22,6 +22,7 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
   const marker = state.index;
 
   if (!isFloat) {
+    // if ((AsciiLookup[state.currentChar] & CharType.LeadingDecimal) !== 0) {
     if (state.currentChar === Chars.Zero) {
       nextChar(state);
       const lowerCasedLetters = state.currentChar | 32;
@@ -43,7 +44,6 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
       } else if (AsciiLookup[state.currentChar] & CharType.Decimal) {
         kind = ScannerFlags.ImplicitOctal;
         state.tokenValue = scanImplicitOctalDigits(state, context, marker);
-        // It's invalid if we found a '8' or '9' during the scan
         if (state.tokenValue === Escape.Invalid) {
           kind = ScannerFlags.LeadingDecimal;
           isNotFloat = false;
