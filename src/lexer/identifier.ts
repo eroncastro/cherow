@@ -103,7 +103,7 @@ export function scanIdentifierOrKeyword(state: ParserState, context: Context): T
   state.tokenValue = state.source.slice(state.startIndex, state.index);
 
   if ((scanFlags & CharType.SlowPath) !== CharType.SlowPath) {
-    if ((scanFlags & CharType.NoKeywordCandidate) === CharType.NoKeywordCandidate) {
+    if ((scanFlags & CharType.CannotBeAKeyword) === CharType.CannotBeAKeyword) {
       return Token.Identifier;
     }
 

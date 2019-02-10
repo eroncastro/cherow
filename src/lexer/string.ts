@@ -25,8 +25,7 @@ export function scanStringLiteral(state: ParserState, context: Context): Token |
       return Token.StringLiteral;
     }
 
-    // TODO: Rename 'SlowPath' to backslash?
-    if (AsciiLookup[state.currentChar] & CharType.SlowPath) {
+    if (AsciiLookup[state.currentChar] & CharType.Backslash) {
       state.tokenValue += state.source.slice(marker, state.index);
       nextChar(state);
       const code = scanEscape(state, context, /* isTemplate */ false);
@@ -45,7 +44,7 @@ export function scanStringLiteral(state: ParserState, context: Context): Token |
     nextChar(state);
   }
 
-  reportAt(state, marker, state.line, marker + 2, Errors.UnterminatedString);
+  reportAt(state, marker, state.line, marker, Errors.UnterminatedString);
 }
 
 /**

@@ -12,19 +12,142 @@ import { scanMaybeIdentifier, scanIdentifierOrKeyword, scanPrivatemame } from '.
 export type ScanSingleTokenAlternativeCallback = (state: ParserState, context: Context) => Token;
 
 // Table of one-character tokens
-const oneCharTokens = new Array(128).fill(0) as Token[];
-
-// `,`, `?`, `[`, `]`, `{`, `}`, `~`, `(`, `)`,  `:` , `;`
-oneCharTokens[Chars.Comma] = Token.Comma;
-oneCharTokens[Chars.QuestionMark] = Token.QuestionMark;
-oneCharTokens[Chars.LeftBracket] = Token.LeftBracket;
-oneCharTokens[Chars.RightBracket] = Token.RightBracket;
-oneCharTokens[Chars.LeftBrace] = Token.LeftBrace;
-oneCharTokens[Chars.Tilde] = Token.Complement;
-oneCharTokens[Chars.LeftParen] = Token.LeftParen;
-oneCharTokens[Chars.RightParen] = Token.RightParen;
-oneCharTokens[Chars.Colon] = Token.Colon;
-oneCharTokens[Chars.Semicolon] = Token.Semicolon;
+//
+// Note: We could have used 'new Array', but using the Array() constructor can be ambiguous,
+// since it accepts either a length or a list of elements:
+//
+// See: http://bonsaiden.github.io/JavaScript-Garden/#array.constructor
+//
+const oneCharTokens = [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  65549,
+  18,
+  0,
+  0,
+  20,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  23,
+  19,
+  0,
+  0,
+  0,
+  24,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1114133,
+  0,
+  22,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1114126,
+  0,
+  0,
+  16842800,
+  0
+];
 
 /**
  * Scans a single token
@@ -37,7 +160,6 @@ function scanSingleToken(state: ParserState, context: Context): Token | void {
   if (state.currentChar <= 0x7f) {
     // One char punctuator lookup
     const oneCharToken = oneCharTokens[state.currentChar];
-
     if (oneCharToken > 0) {
       nextChar(state);
       return oneCharToken;

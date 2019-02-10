@@ -6,18 +6,20 @@ export const enum CharType {
   IDStart = 1 << 1,
   Decimal = 1 << 2,
   KeywordCandidate = 1 << 3,
-  NoKeywordCandidate = 1 << 4,
+  CannotBeAKeyword = 1 << 4,
   Exponent = 1 << 5,
   SlowPath = 1 << 6,
   LineTerminator = 1 << 7,
-  LeadingDecimal = 1 << 8,
+  Quote = 1 << 8,
   WhiteSpace = 1 << 9 | LineTerminator,
   Letters = IDContinue | IDStart,
+  Backslash = SlowPath
 }
 
 /*@internal*/
-export const AsciiLookup = new Uint8Array(0x80)
-
+export const AsciiLookup = new Int8Array(0x80)
+  .fill(CharType.Quote, 0x27, 0x28) /* ' */
+  .fill(CharType.Quote, 0x22, 0x23) /* " */
   .fill(CharType.WhiteSpace, 0x20, 0x21) /* space */
   .fill(CharType.WhiteSpace, 0x9, 0xA) /* horizontal tab */
   .fill(CharType.WhiteSpace, 0xB, 0xC) /* vertical tab */
@@ -29,11 +31,10 @@ export const AsciiLookup = new Uint8Array(0x80)
   .fill(CharType.Letters, 0x24, 0x25) /* $ */
   .fill(CharType.SlowPath , 0x5C, 0x5D) /* \ */
   .fill(CharType.Decimal, 0x30, 0x3a) /* 0 - 9 */
-  .fill(CharType.Letters | CharType.NoKeywordCandidate, 0x41, 0x5b) /* A-Z */
+  .fill(CharType.Letters | CharType.CannotBeAKeyword, 0x41, 0x5b) /* A-Z */
   .fill(CharType.Letters, 0x5f, 0x60) /* _ */
+  // Note: Keywords are all lowercase and only contain letters
   .fill(CharType.Letters | CharType.KeywordCandidate, 0x61, 0x7b); /* a-z */
-
-
 
 /**
  * A list of character constants with much more human-readable names.
