@@ -10,7 +10,7 @@ export function create(source: string): any {
     column: 0, // Beginning of current column
     length: source.length, // The length of source
     startIndex: 0,
-    tokenValue: undefined,
+    tokenValue: '',
     token: Token.EndOfSource,
     tokenRaw: '',
     tokenRegExp: undefined,

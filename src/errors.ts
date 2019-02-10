@@ -20,7 +20,8 @@ export const enum Errors {
   UnterminatedComment,
   InvalidDynamicUnicode,
   IllegalCaracter,
-  MissingHexDigits
+  MissingHexDigits,
+  InvalidImplicitOctals
 }
 /*@internal*/
 export const errorMessages: {
@@ -44,7 +45,8 @@ export const errorMessages: {
   [Errors.UnterminatedComment]: 'Multiline comment was not closed properly',
   [Errors.InvalidDynamicUnicode]: 'The identifier contained dynamic unicode escape that was not closed',
   [Errors.IllegalCaracter]: "Illegal character '%0'",
-  [Errors.MissingHexDigits]: 'Missing hex digits'
+  [Errors.MissingHexDigits]: 'Missing hex digits',
+  [Errors.InvalidImplicitOctals]: 'Invalid implicit octal'
 };
 
 export class ParseError extends SyntaxError {

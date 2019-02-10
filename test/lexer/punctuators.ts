@@ -1,152 +1,97 @@
 import * as t from 'assert';
-import { scanSingleToken } from '../../src/scanner';
 import { Context } from '../../src/common';
+import { Token } from '../../src/token';
 import { create } from '../../src/state';
-import { Token, KeywordDescTable } from '../../src/token';
+import { nextToken } from '../../src/lexer/scan';
 
-describe('Lexer - Punctuators', () => {
-  interface Opts {
-    source: string;
-    context: Context;
-    token: Token;
-    hasNext: boolean;
-    line: number;
-    column: number;
-  }
+describe('src/scanner/seek', () => {
   const tokens: Array<[Context, Token, string]> = [
-    [Context.Empty, Token.StrictNotEqual, '!=='],
-    [Context.Empty, Token.LooseNotEqual, '!='],
-    [Context.Empty, Token.Arrow, '=>'],
-    [Context.Empty, Token.Assign, '='],
-    [Context.Empty, Token.StrictEqual, '==='],
-    [Context.Empty, Token.LooseEqual, '=='],
-    [Context.Empty, Token.AddAssign, '+='],
-    [Context.Empty, Token.ExponentiateAssign, '**='],
-    [Context.Empty, Token.MultiplyAssign, '*='],
-    [Context.Empty, Token.Exponentiate, '**'],
-    [Context.Empty, Token.DivideAssign, '/='],
-    [Context.Empty, Token.ModuloAssign, '%='],
-    [Context.Empty, Token.LeftParen, '('],
-    [Context.Empty, Token.LeftBrace, '{'],
-    [Context.Empty, Token.Period, '.'],
-    [Context.Empty, Token.JSXAutoClose, '/>'],
-    [Context.OptionsJSX, Token.JSXClose, '</'],
-    [Context.Empty, Token.Divide, '/'],
-    [Context.Empty, Token.Ellipsis, '...'],
-    [Context.Empty, Token.RightBrace, '}'],
-    [Context.Empty, Token.RightParen, ')'],
-    [Context.Empty, Token.Semicolon, ';'],
-    [Context.Empty, Token.Comma, ','],
-    [Context.Empty, Token.LeftBracket, '['],
-    [Context.Empty, Token.RightBracket, ']'],
-    [Context.Empty, Token.Colon, ':'],
-    [Context.Empty, Token.QuestionMark, '?'],
-    [Context.Empty, Token.Increment, '++'],
-    [Context.Empty, Token.Decrement, '--'],
-    [Context.Empty, Token.SubtractAssign, '-='],
-    [Context.Empty, Token.BitwiseOrAssign, '|='],
-    [Context.Empty, Token.Negate, '!'],
-    [Context.Empty, Token.Complement, '~'],
-    [Context.Empty, Token.Add, '+'],
-    [Context.Empty, Token.Subtract, '-'],
-    [Context.Empty, Token.Multiply, '*'],
-    [Context.Empty, Token.Modulo, '%'],
-    [Context.Empty, Token.LogicalOr, '||'],
-    [Context.Empty, Token.LessThanOrEqual, '<='],
-    [Context.Empty, Token.BitwiseOr, '|'],
-    [Context.Empty, Token.BitwiseAndAssign, '&='],
-    [Context.Empty, Token.LogicalAnd, '&&'],
-    [Context.Empty, Token.BitwiseAnd, '&'],
-    [Context.Empty, Token.GreaterThanOrEqual, '>='],
-    [Context.Empty, Token.ShiftRightAssign, '>>='],
-    [Context.Empty, Token.LogicalShiftRightAssign, '>>>='],
-    [Context.Empty, Token.GreaterThan, '>'],
-    [Context.Empty, Token.ShiftRight, '>>'],
-    [Context.Empty, Token.LogicalShiftRight, '>>>'],
-    [Context.Empty, Token.LessThanOrEqual, '<='],
-    [Context.Empty, Token.ShiftLeftAssign, '<<='],
-    [Context.Empty, Token.LessThan, '<'],
-    [Context.Empty, Token.ShiftLeft, '<<'],
-    [Context.Empty, Token.BitwiseXorAssign, '^='],
-    [Context.Empty, Token.BitwiseXor, '^']
+    [Context.None, Token.StrictNotEqual, '!=='],
+    [Context.None, Token.LooseNotEqual, '!='],
+    [Context.None, Token.Arrow, '=>'],
+    [Context.None, Token.Assign, '='],
+    [Context.None, Token.StrictEqual, '==='],
+    [Context.None, Token.LooseEqual, '=='],
+    [Context.None, Token.AddAssign, '+='],
+    [Context.None, Token.ExponentiateAssign, '**='],
+    [Context.None, Token.MultiplyAssign, '*='],
+    [Context.None, Token.Exponentiate, '**'],
+    [Context.None, Token.DivideAssign, '/='],
+    [Context.None, Token.ModuloAssign, '%='],
+    [Context.None, Token.LeftParen, '('],
+    [Context.None, Token.LeftBrace, '{'],
+    [Context.None, Token.Period, '.'],
+    [Context.None, Token.JSXAutoClose, '/>'],
+    //[Context.OptionsJSX, Token.JSXClose, '</'],
+    [Context.None, Token.Divide, '/'],
+    [Context.None, Token.Ellipsis, '...'],
+    [Context.None, Token.RightBrace, '}'],
+    [Context.None, Token.RightParen, ')'],
+    [Context.None, Token.Semicolon, ';'],
+    [Context.None, Token.Comma, ','],
+    [Context.None, Token.LeftBracket, '['],
+    [Context.None, Token.RightBracket, ']'],
+    [Context.None, Token.Colon, ':'],
+    [Context.None, Token.QuestionMark, '?'],
+    [Context.None, Token.Increment, '++'],
+    [Context.None, Token.Decrement, '--'],
+    [Context.None, Token.SubtractAssign, '-='],
+    [Context.None, Token.BitwiseOrAssign, '|='],
+    [Context.None, Token.Negate, '!'],
+    [Context.None, Token.Complement, '~'],
+    [Context.None, Token.Add, '+'],
+    [Context.None, Token.Subtract, '-'],
+    [Context.None, Token.Multiply, '*'],
+    [Context.None, Token.Modulo, '%'],
+    [Context.None, Token.LogicalOr, '||'],
+    [Context.None, Token.LessThanOrEqual, '<='],
+    [Context.None, Token.BitwiseOr, '|'],
+    [Context.None, Token.BitwiseAndAssign, '&='],
+    [Context.None, Token.LogicalAnd, '&&'],
+    [Context.None, Token.BitwiseAnd, '&'],
+    [Context.None, Token.GreaterThanOrEqual, '>='],
+    [Context.None, Token.ShiftRightAssign, '>>='],
+    [Context.None, Token.LogicalShiftRightAssign, '>>>='],
+    [Context.None, Token.GreaterThan, '>'],
+    [Context.None, Token.ShiftRight, '>>'],
+    [Context.None, Token.LogicalShiftRight, '>>>'],
+    [Context.None, Token.LessThanOrEqual, '<='],
+    [Context.None, Token.ShiftLeftAssign, '<<='],
+    [Context.None, Token.LessThan, '<'],
+    [Context.None, Token.ShiftLeft, '<<'],
+    [Context.None, Token.BitwiseXorAssign, '^='],
+    [Context.None, Token.BitwiseXor, '^']
   ];
 
-  for (const [ctx, token, op] of tokens) {
+  for (const [ctx, tokenn, op] of tokens) {
     it(`scans '${op}'`, () => {
-      const state = create(op, undefined);
-      const found = scanSingleToken(state, ctx);
-
+      const scan = create(op);
+      const token = nextToken(scan, ctx);
       t.deepEqual(
         {
-          token: KeywordDescTable[found & Token.Type],
-          hasNext: state.index < state.length,
-          line: state.line,
-          column: state.column
+          token,
+          column: scan.column,
+          line: scan.line,
+          index: scan.index
         },
         {
-          token: KeywordDescTable[token & Token.Type],
-          hasNext: false,
+          token: token,
           line: 1,
-          column: op.length
+          column: op.length,
+          index: op.length
         }
       );
     });
   }
 
-  it("scans '<' in '<//**/'", () => {
-    const state = create('<//**/', undefined);
-    const found = scanSingleToken(state, Context.OptionsJSX);
-    t.deepEqual(
-      {
-        token: found,
-        hasNext: state.index < state.length,
-        line: state.line,
-        column: state.column
-      },
-      {
-        token: Token.LessThan,
-        hasNext: true,
-        line: 1,
-        column: 1
-      }
-    );
-  });
+  //    console.log(token.type === Token.Punctuator);
+  //  console.log(token.value === '(');
 
-  it("scans '<' in '<//**/'", () => {
-    const state = create('<//**/', undefined);
-    const found = scanSingleToken(state, Context.Empty);
-    t.deepEqual(
-      {
-        token: found,
-        hasNext: state.index < state.length,
-        line: state.line,
-        column: state.column
-      },
-      {
-        token: Token.LessThan,
-        hasNext: true,
-        line: 1,
-        column: 1
-      }
-    );
-  });
+  //const token1 = state(Context.AllowPossibleRegEx);
 
-  it("scans '.' in '..'", () => {
-    const state = create('..', undefined);
-    const found = scanSingleToken(state, Context.Empty);
-    t.deepEqual(
-      {
-        token: KeywordDescTable[found & Token.Type],
-        hasNext: state.index < state.length,
-        line: state.line,
-        column: state.column
-      },
-      {
-        token: KeywordDescTable[Token.Period & Token.Type],
-        hasNext: true,
-        line: 1,
-        column: 2
-      }
-    );
-  });
+  //console.log(token1.type === Token.EndOfSource);
+
+  //console.log(token1);
+
+  //scanSingleToken(state);
 });

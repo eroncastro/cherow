@@ -20,6 +20,7 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
   let kind = ScannerFlags.Decimal;
   let isNotFloat = !isFloat;
   const marker = state.index;
+  let leadingErrPos = marker;
 
   if (!isFloat) {
     // if ((AsciiLookup[state.currentChar] & CharType.LeadingDecimal) !== 0) {
@@ -46,6 +47,7 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
         state.tokenValue = scanImplicitOctalDigits(state, context, marker);
         if (state.tokenValue === Escape.Invalid) {
           kind = ScannerFlags.LeadingDecimal;
+          leadingErrPos = state.index;
           isNotFloat = false;
         }
       } else if (state.currentChar < Chars.Zero || state.currentChar > Chars.Seven) {
@@ -64,6 +66,11 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
       }
       if (digit >= 0 && state.currentChar !== Chars.Period && !isIdentifierStart(state.currentChar)) {
         return Token.NumericLiteral;
+      }
+      // Note: There will be remaining digits if the length of the significant digits exceeds 10 (*more than 4-bit*), so
+      // we need to continue scanning until we reach the maximum numbers of digits.
+      while (AsciiLookup[state.currentChar] & CharType.Decimal) {
+        nextChar(state);
       }
     }
 
@@ -109,7 +116,9 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
   // This case is only to prevent `3in x` and `3instanceof x` cases.
   // The next character must not be an identifier start or decimal digit.
   if (AsciiLookup[state.currentChar] & (CharType.Decimal | CharType.Letters) || isIdentifierStart(state.currentChar)) {
-    reportAt(state, marker, state.line, state.column, Errors.IDStartAfterNumber);
+    kind & ScannerFlags.LeadingDecimal
+      ? reportAt(state, marker, state.line, leadingErrPos - 1, Errors.InvalidImplicitOctals)
+      : reportAt(state, marker, state.line, marker, Errors.IDStartAfterNumber);
   }
   if (kind & ScannerFlags.LeadingDecimal) {
     state.octalPos = { index: state.index, line: state.line, column: state.index - 1 };

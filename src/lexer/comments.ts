@@ -1,8 +1,24 @@
-import { ParserState } from '../common';
+import { ParserState, Context } from '../common';
 import { Chars } from '../chars';
 import { Token } from '../token';
 import { report, Errors } from '../errors';
 import { ScannerFlags, nextChar } from './common';
+
+/**
+ * Skips hashbang - Stage 3 proposal
+ *
+ * @param {ParserState} state
+ * @param {Context} context
+ */
+export function skipHashBang(state: ParserState, context: Context): void {
+  if (
+    context & Context.OptionsNext &&
+    state.currentChar === Chars.Hash &&
+    state.source.charCodeAt(state.index + 1) === Chars.Exclamation
+  ) {
+    skipSingleLineComment(state);
+  }
+}
 
 /**
  * Skips a multiline comment. It's highly optimized

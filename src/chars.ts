@@ -20,9 +20,9 @@ export const AsciiLookup = new Uint8Array(0x80)
   .fill(CharType.WhiteSpace, 0x20, 0x21) /* space */
   .fill(CharType.WhiteSpace, 0x9, 0xA) /* horizontal tab */
   .fill(CharType.WhiteSpace, 0xB, 0xC) /* vertical tab */
-  .fill(CharType.WhiteSpace, 0x13, 0xE) /* carriage return */
-  .fill(CharType.WhiteSpace, 0x10, 0xB) /* line feed */
-  .fill(CharType.WhiteSpace, 0x12, 0xC) /* form feed */
+  .fill(CharType.WhiteSpace, 0xD, 0xE) /* carriage return */
+  .fill(CharType.WhiteSpace, 0xC, 0xD) /* form feed */
+  .fill(CharType.WhiteSpace, 0xA, 0xB) /* line feed */
   .fill(CharType.Exponent, 0x2B, 0x2C) /* + */
   .fill(CharType.Exponent, 0x2D, 0x2E) /* - */
   .fill(CharType.Letters, 0x24, 0x25) /* $ */
@@ -32,6 +32,8 @@ export const AsciiLookup = new Uint8Array(0x80)
   .fill(CharType.Letters | CharType.NoKeywordCandidate, 0x41, 0x5b) /* A-Z */
   .fill(CharType.Letters, 0x5f, 0x60) /* _ */
   .fill(CharType.Letters | CharType.KeywordCandidate, 0x61, 0x7b); /* a-z */
+
+
 
 /**
  * A list of character constants with much more human-readable names.
