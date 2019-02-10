@@ -1,7 +1,7 @@
 import { Token } from '../token';
 import { reportAt, Errors } from '../errors';
 import { isIdentifierStart } from '../unicode';
-import { Chars } from '../chars';
+import { Chars, AsciiLookup, CharType } from '../chars';
 import { Context } from '../common';
 import { ParserState } from '../common';
 import { ScannerFlags, Escape, nextChar, toHex } from './common';
@@ -40,7 +40,7 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
         nextChar(state);
         kind = ScannerFlags.Binary;
         state.tokenValue = scanBinaryDigits(state, marker);
-      } else if (state.currentChar >= Chars.Zero && state.currentChar <= Chars.Nine) {
+      } else if (AsciiLookup[state.currentChar] & CharType.Decimal) {
         kind = ScannerFlags.ImplicitOctal;
         state.tokenValue = scanImplicitOctalDigits(state, context, marker);
         // It's invalid if we found a '8' or '9' during the scan
@@ -57,7 +57,7 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
   if (kind & (ScannerFlags.Decimal | ScannerFlags.LeadingDecimal)) {
     if (isNotFloat) {
       let digit = 9;
-      while (state.currentChar >= Chars.Zero && state.currentChar <= Chars.Nine && digit >= 0) {
+      while (AsciiLookup[state.currentChar] & CharType.Decimal && digit >= 0) {
         state.tokenValue = 10 * (state.tokenValue as number) + (state.currentChar - Chars.Zero);
         nextChar(state);
         --digit;
@@ -69,7 +69,7 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
 
     if (state.currentChar === Chars.Period) {
       nextChar(state);
-      while (state.currentChar >= Chars.Zero && state.currentChar <= Chars.Nine) {
+      while (AsciiLookup[state.currentChar] & CharType.Decimal) {
         nextChar(state);
       }
     }
@@ -97,14 +97,17 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
     }
     let digits = 0;
 
-    while (state.currentChar >= Chars.Zero && state.currentChar <= Chars.Nine) {
+    while (AsciiLookup[state.currentChar] & CharType.Decimal) {
       nextChar(state);
       digits++;
     }
     // we must have at least one decimal digit after 'e'/'E'
     if (digits < 1) reportAt(state, marker, state.line, state.column, Errors.MissingExponent);
   }
-  if ((state.currentChar >= Chars.Zero && state.currentChar <= Chars.Nine) || isIdentifierStart(state.currentChar)) {
+
+  // This case is only to prevent `3in x` and `3instanceof x` cases.
+  // The next character must not be an identifier start or decimal digit.
+  if (AsciiLookup[state.currentChar] & (CharType.Decimal | CharType.Letters) || isIdentifierStart(state.currentChar)) {
     reportAt(state, marker, state.line, state.column, Errors.IDStartAfterNumber);
   }
   if (kind & ScannerFlags.LeadingDecimal) {
