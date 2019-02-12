@@ -10,18 +10,11 @@ describe('src/scanner/seek', () => {
       const state = create(opts.source);
       const token = nextToken(state, Context.AllowTemplate);
       t.deepEqual(
-        { token },
+        { token, column: state.column, line: state.line },
         {
-          token: opts.token
-          // value: opts.value,
-          // raw: opts.raw,
-          // octalMessage: opts.octalMessage,
-          // octalPos: opts.OctalPos,
-          // newline: opts.newline,
-          // line: opts.line,
-          // column: opts.column,
-          // start: opts.start,
-          // index: opts.end
+          token: opts.token,
+          column: opts.column,
+          line: opts.line
         }
       );
     });

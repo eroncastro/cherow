@@ -318,7 +318,11 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
           const next = state.currentChar;
 
           if (next === Chars.Hyphen) {
-            if (state.source.charCodeAt(state.index + 1) === Chars.GreaterThan && type & ScannerFlags.NewLine) {
+            if (
+              (context & Context.Module) < 1 &&
+              state.source.charCodeAt(state.index + 1) === Chars.GreaterThan &&
+              type & ScannerFlags.NewLine
+            ) {
               nextChar(state);
               type = skipSingleLineComment(state, type);
               continue;
@@ -383,6 +387,7 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
 
             case Chars.Exclamation:
               if (
+                (context & Context.Module) < 1 &&
                 state.source.charCodeAt(state.index + 1) === Chars.Hyphen &&
                 state.source.charCodeAt(state.index + 2) === Chars.Hyphen
               ) {

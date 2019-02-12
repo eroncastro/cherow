@@ -57,17 +57,13 @@ describe('src/scanner/scan', () => {
       [Context.None, Token.RightBracket, ']'],
       [Context.None, Token.Colon, ':'],
       [Context.None, Token.QuestionMark, '?'],
-
       [Context.None, Token.Arrow, '=>'],
-      // [Context.None,      Token.Period,       "."],
-      // [Context.None,      Token.Ellipsis,     "..."],
-
+      [Context.None, Token.Period, '.'],
+      [Context.None, Token.Ellipsis, '...'],
       [Context.OptionsJSX, Token.JSXClose, '</'],
       [Context.OptionsJSX, Token.JSXAutoClose, '/>'],
-
       [Context.None, Token.Increment, '++'],
       [Context.None, Token.Decrement, '--'],
-
       [Context.None, Token.Assign, '='],
       [Context.None, Token.ShiftLeftAssign, '<<='],
       [Context.None, Token.ShiftRightAssign, '>>='],
@@ -81,7 +77,6 @@ describe('src/scanner/scan', () => {
       [Context.None, Token.BitwiseXorAssign, '^='],
       [Context.None, Token.BitwiseOrAssign, '|='],
       [Context.None, Token.BitwiseAndAssign, '&='],
-
       [Context.None, Token.Negate, '!'],
       [Context.None, Token.Complement, '~'],
       [Context.None, Token.Add, '+'],
@@ -149,23 +144,5 @@ describe('src/scanner/scan', () => {
         );
       });
     }
-    /*
-      it("scans '.' in '..'", () => {
-          const parser = create("..", undefined);
-          const found = scan(parser, Context.None);
-
-          assert.match({
-              token: tokenDesc(found),
-              hasNext: hasNext(parser),
-              line: parser.line,
-              column: parser.column,
-          }, {
-              token: tokenDesc(Token.Period),
-              hasNext: true,
-              line: 1, column: 1,
-          });
-      }); */
-
-    // TODO
   });
 });

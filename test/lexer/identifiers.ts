@@ -132,20 +132,6 @@ describe('lexer - numbers', () => {
     end: 1
   });
 
-  /*
-  pass('scan surrogate pair + identifier', {
-    source: '𞸆_$',
-    ctx: Context.None,
-    token: Token.Identifier,
-    value: '𞸆_$',
-    raw: '𞸆_$',
-    newline: false,
-    line: 1,
-    column: 2,
-    start: 0,
-    end: 2
-  });*/
-
   pass('scan private name', {
     source: '#foo',
     ctx: Context.OptionsNext,

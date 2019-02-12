@@ -244,45 +244,17 @@ describe('src/scanner/seek', () => {
     start: 0,
     end: 4
   });
-
-  /*
   pass('skips nothing', {
-    source: '"\\u00FG"',
-    token: Token.Invalid,
-    value: '',
-    raw: '"\\u00F',
+    source: '"\\u{67}"',
+    token: Token.StringLiteral,
+    value: 'g',
+    raw: '"\\u{67}"',
     newline: false,
     line: 1,
-    column: 6,
+    column: 8,
     start: 0,
-    end: 6
+    end: 8
   });
-
-  pass('skips nothing', {
-    source: '"\\xFG"',
-    token: Token.Invalid,
-    value: '',
-    raw: '"\\xF',
-    newline: false,
-    line: 1,
-    column: 4,
-    start: 0,
-    end: 4
-  });
-*/ pass(
-    'skips nothing',
-    {
-      source: '"\\u{67}"',
-      token: Token.StringLiteral,
-      value: 'g',
-      raw: '"\\u{67}"',
-      newline: false,
-      line: 1,
-      column: 8,
-      start: 0,
-      end: 8
-    }
-  );
 
   pass('skips nothing', {
     source: '"\\u0037"',
