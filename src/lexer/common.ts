@@ -7,7 +7,7 @@ export const enum ScannerFlags {
   NewLine = 1 << 0,
   SameLine = 1 << 1,
   LastIsCR = 1 << 2,
-  SeenDelimitedCommentEnd = 1 << 3,
+  SeenDelimitedCommentEnd = 1 << 3, // Used to parse --> closing html comment properly
   Decimal = 1 << 4,
   IsFloat = 1 << 5,
   LeadingDecimal = 1 << 6,
@@ -24,13 +24,6 @@ export const enum Escape {
   None = 0,
   Incomplete = -2,
   Invalid = -1
-}
-
-export function consumeOpt(parser: ParserState, code: number): boolean {
-  if (parser.source.charCodeAt(parser.index) !== code) return false;
-  parser.index++;
-  parser.column++;
-  return true;
 }
 
 /**

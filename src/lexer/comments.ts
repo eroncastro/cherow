@@ -1,7 +1,7 @@
 import { ParserState, Context } from '../common';
 import { Chars } from '../chars';
 import { report, Errors } from '../errors';
-import { ScannerFlags, nextChar, consumeOpt } from './common';
+import { ScannerFlags, nextChar } from './common';
 
 /**
  * Skips hashbang - Stage 3 proposal
@@ -83,7 +83,10 @@ export function skipMultilineComment(state: ParserState, type: ScannerFlags): an
     } else if (next === Chars.Asterisk) {
       nextChar(state);
       type &= ~ScannerFlags.LastIsCR;
-      if (consumeOpt(state, Chars.Slash)) return type;
+      if (state.currentChar === Chars.Slash) {
+        nextChar(state);
+        return type;
+      }
     } else {
       type &= ~ScannerFlags.LastIsCR;
       nextChar(state);

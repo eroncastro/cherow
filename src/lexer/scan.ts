@@ -1,6 +1,6 @@
-import { Context, ParserState, fromCodePoint } from '../common';
+import { Context, ParserState, fromCodePoint, Flags } from '../common';
 import { Chars, AsciiLookup, CharType } from '../chars';
-import { nextChar, ScannerFlags, getMostLikelyUnicodeChar, consumeOpt } from './common';
+import { nextChar, ScannerFlags, getMostLikelyUnicodeChar } from './common';
 import { Token } from '../token';
 import { scanNumericLiterals } from './numeric';
 import { scanIdentifierOrKeyword, scanPrivatemame } from './identifier';
@@ -150,8 +150,11 @@ const tableLookup = [
  * @returns {Token}
  */
 export function nextToken(state: ParserState, context: Context): Token {
-  const type = ScannerFlags.None;
-  return (state.token = scanSingleToken(state, context, type) as Token);
+  state.flags &= ~Flags.PrecedingLineBreak;
+  state.endIndex = state.index;
+  state.endLine = state.line;
+  state.endColumn = state.column;
+  return (state.token = scanSingleToken(state, context) as Token);
 }
 
 /**
@@ -162,9 +165,15 @@ export function nextToken(state: ParserState, context: Context): Token {
  * @param {ScannerFlags} type
  * @returns {(Token | void)}
  */
-export function scanSingleToken(state: ParserState, context: Context, type: ScannerFlags): Token | void {
+export function scanSingleToken(state: ParserState, context: Context): Token | void {
+  let type = ScannerFlags.None;
   while (state.index < state.length) {
     const next = state.source.charCodeAt(state.index);
+
+    // TODO! Find a better way - we loose performance on this!
+    state.startIndex = state.index;
+    state.startLine = state.line;
+    state.startColumn = state.column;
 
     if (next < 0x7f) {
       const token = tableLookup[next];
@@ -259,14 +268,17 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
         // `!`, `!=`, `!==`
         case Token.Negate:
           nextChar(state);
-          if (!consumeOpt(state, Chars.EqualSign)) return Token.Negate;
-          if (!consumeOpt(state, Chars.EqualSign)) return Token.LooseNotEqual;
+          if (state.currentChar !== Chars.EqualSign) return Token.Negate;
+          nextChar(state);
+          if (state.currentChar !== Chars.EqualSign) return Token.LooseNotEqual;
+          nextChar(state);
           return Token.StrictNotEqual;
 
         // `%`, `%=`
         case Token.Modulo:
           nextChar(state);
-          if (!consumeOpt(state, Chars.EqualSign)) return Token.Modulo;
+          if (state.currentChar !== Chars.EqualSign) return Token.Modulo;
+          nextChar(state);
           return Token.ModuloAssign;
 
         // `*`, `**`, `*=`, `**=`
@@ -282,14 +294,16 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
 
           if (next !== Chars.Asterisk) return Token.Multiply;
           nextChar(state);
-          if (!consumeOpt(state, Chars.EqualSign)) return Token.Exponentiate;
+          if (state.currentChar !== Chars.EqualSign) return Token.Exponentiate;
+          nextChar(state);
           return Token.ExponentiateAssign;
         }
 
         // `^`, `^=`
         case Token.BitwiseXor:
           nextChar(state);
-          if (!consumeOpt(state, Chars.EqualSign)) return Token.BitwiseXor;
+          if (state.currentChar !== Chars.EqualSign) return Token.BitwiseXor;
+          nextChar(state);
           return Token.BitwiseXorAssign;
 
         // `+`, `++`, `+=`
@@ -319,9 +333,10 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
 
           if (next === Chars.Hyphen) {
             if (
+              context & Context.OptionsWebCompat &&
               (context & Context.Module) < 1 &&
               state.source.charCodeAt(state.index + 1) === Chars.GreaterThan &&
-              type & ScannerFlags.NewLine
+              type & (ScannerFlags.SeenDelimitedCommentEnd | ScannerFlags.NewLine)
             ) {
               nextChar(state);
               type = skipSingleLineComment(state, type);
@@ -341,20 +356,18 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
 
         case Token.Divide: {
           nextChar(state);
-          if (context & Context.AllowRegExp) {
-            // return scanRegExp(state, context);
-          }
-
           if (state.index < state.length) {
             const ch = state.currentChar;
             if (ch === Chars.Slash) {
               nextChar(state);
-              type = skipSingleLineComment(state, type);
+              type = skipSingleLineComment(state, type | ScannerFlags.SeenDelimitedCommentEnd);
               break;
             } else if (ch === Chars.Asterisk) {
               nextChar(state);
-              type = skipMultilineComment(state, type);
+              type = skipMultilineComment(state, type | ScannerFlags.SeenDelimitedCommentEnd);
               break;
+            } else if (context & Context.AllowRegExp) {
+              // return scanRegExp(state, context);
             } else if (ch === Chars.EqualSign) {
               nextChar(state);
               return Token.DivideAssign;
@@ -375,7 +388,8 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
           switch (state.currentChar) {
             case Chars.LessThan:
               nextChar(state);
-              if (consumeOpt(state, Chars.EqualSign)) {
+              if ((state.currentChar as number) === Chars.EqualSign) {
+                nextChar(state);
                 return Token.ShiftLeftAssign;
               } else {
                 return Token.ShiftLeft;
@@ -391,15 +405,13 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
                 state.source.charCodeAt(state.index + 1) === Chars.Hyphen &&
                 state.source.charCodeAt(state.index + 2) === Chars.Hyphen
               ) {
-                nextChar(state);
-                nextChar(state);
-                nextChar(state);
+                // <!-- marks the beginning of a line comment (for www usage)
                 type = skipSingleLineComment(state, type);
                 continue;
               }
 
             case Chars.Slash: {
-              if (!(context & Context.OptionsJSX)) break;
+              if ((context & Context.OptionsJSX) < 1) break;
               const index = state.index + 1;
 
               // Check that it's not a comment start.
@@ -425,7 +437,8 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
 
           if (next === Chars.EqualSign) {
             nextChar(state);
-            if (consumeOpt(state, Chars.EqualSign)) {
+            if (state.currentChar === Chars.EqualSign) {
+              nextChar(state);
               return Token.StrictEqual;
             } else {
               return Token.LooseEqual;
@@ -474,7 +487,8 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
 
             if (next === Chars.GreaterThan) {
               nextChar(state);
-              if (consumeOpt(state, Chars.EqualSign)) {
+              if (state.currentChar === Chars.EqualSign) {
+                nextChar(state);
                 return Token.LogicalShiftRightAssign;
               } else {
                 return Token.LogicalShiftRight;
@@ -562,6 +576,8 @@ export function scanSingleToken(state: ParserState, context: Context, type: Scan
       }
     }
   }
+
+  if (type & ScannerFlags.NewLine) state.flags |= Flags.PrecedingLineBreak;
 
   return Token.EndOfSource;
 }

@@ -60,8 +60,13 @@ export interface ParserState {
   index: number;
   line: number;
   column: number;
-  length: number;
+  endIndex: number;
+  endLine: number;
+  endColumn: number;
   startIndex: number;
+  startLine: number;
+  startColumn: number;
+  length: number;
   token: Token;
   tokenValue: any;
   tokenRaw: string;
@@ -69,10 +74,9 @@ export interface ParserState {
     pattern: string;
     flags: string;
   };
-  octalPos: OctalPos;
-  octalMessage: Errors;
+  octalPos: OctalPos | undefined;
+  octalMessage: Errors | undefined;
   currentChar: number;
-  seenDelimitedCommentEnd: boolean;
 }
 
 export function toHex(code: number): number {
