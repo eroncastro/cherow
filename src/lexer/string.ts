@@ -1,5 +1,5 @@
 import { Token } from '../token';
-import { reportAt, Errors } from '../errors';
+import { reportAt, report, Errors } from '../errors';
 import { Chars, CharType, AsciiLookup } from '../chars';
 import { Context } from '../common';
 import { ParserState } from '../common';
@@ -37,14 +37,14 @@ export function scanStringLiteral(state: ParserState, context: Context): Token |
 
     // Optimized to make JSON subset of JS, and it also do a
     // fast check for characters that require special handling.
-    if (state.currentChar - 0xe && AsciiLookup[state.currentChar] & CharType.LineTerminator) {
-      break;
+    if (state.currentChar === Chars.CarriageReturn || state.currentChar === Chars.LineFeed) {
+      report(state, Errors.InvalidStringLT);
     }
 
     nextChar(state);
   }
 
-  reportAt(state, marker, state.line, marker, Errors.UnterminatedString);
+  report(state, Errors.UnterminatedString);
 }
 
 /**

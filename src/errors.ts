@@ -21,7 +21,8 @@ export const enum Errors {
   InvalidDynamicUnicode,
   IllegalCaracter,
   MissingHexDigits,
-  InvalidImplicitOctals
+  InvalidImplicitOctals,
+  InvalidStringLT
 }
 /*@internal*/
 export const errorMessages: {
@@ -46,7 +47,8 @@ export const errorMessages: {
   [Errors.InvalidDynamicUnicode]: 'The identifier contained dynamic unicode escape that was not closed',
   [Errors.IllegalCaracter]: "Illegal character '%0'",
   [Errors.MissingHexDigits]: 'Missing hex digits',
-  [Errors.InvalidImplicitOctals]: 'Invalid implicit octal'
+  [Errors.InvalidImplicitOctals]: 'Invalid implicit octal',
+  [Errors.InvalidStringLT]: 'Invalid line break in string literal'
 };
 
 export class ParseError extends SyntaxError {

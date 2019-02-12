@@ -89,6 +89,18 @@ describe('src/scanner/seek', () => {
     end: 8
   });
 
+  pass('scan string with a space', {
+    source: '"spa ce"',
+    token: Token.StringLiteral,
+    value: 'string',
+    raw: '"string"',
+    newline: false,
+    line: 1,
+    column: 8,
+    start: 0,
+    end: 8
+  });
+
   pass('skips nothing', {
     source: '"Francisco"',
     token: Token.StringLiteral,
