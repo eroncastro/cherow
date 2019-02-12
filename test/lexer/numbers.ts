@@ -66,6 +66,7 @@ describe('lexer - numbers', () => {
   fail('fails on Binary-integer-literal-like sequence without any digits', '0b;', Context.Strict);
   fail('fails on Binary-integer-literal-like sequence containing an invalid digit', '0b2;', Context.Strict);
   fail('fails on Binary-integer-literal-like sequence containing an invalid digit', '0077', Context.Strict);
+  fail('fails on invalid BigInt literal', '1ne-1', Context.OptionsNext);
 
   pass('scan single digit with following whitespace', {
     source: '1 ',

@@ -19,6 +19,14 @@ describe('src/scanner/seek', () => {
       );
     });
   }
+  function fail(name: string, source: string, context: Context) {
+    it(name, () => {
+      const state = create(source);
+      t.throws(() => nextToken(state, context));
+    });
+  }
+
+  fail('fails on unterminated', '/* foo', Context.None);
 
   function passAll(name: (lt: string) => string, opts: (lt: string) => any) {
     pass(name('line feed'), opts('\n'));
@@ -38,6 +46,42 @@ describe('src/scanner/seek', () => {
     source: '        ',
     line: 1,
     column: 8
+  });
+
+  pass('skips line feed and newline', {
+    source: '\r\n',
+    line: 2,
+    column: 0
+  });
+
+  pass('skips newline and line feed', {
+    source: '\n\r',
+    line: 3,
+    column: 0
+  });
+
+  pass('skips NonBreakingSpace', {
+    source: '\u2000',
+    line: 1,
+    column: 1
+  });
+
+  pass('skips EnQuad', {
+    source: '\u2001',
+    line: 1,
+    column: 1
+  });
+
+  pass('skips NonBreakingSpace', {
+    source: '\u2007',
+    line: 1,
+    column: 1
+  });
+
+  pass('skips NonBreakingSpace', {
+    source: '\u200a',
+    line: 1,
+    column: 1
   });
 
   pass('skips tabs', {

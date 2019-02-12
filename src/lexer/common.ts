@@ -67,6 +67,25 @@ export function getMostLikelyUnicodeChar(state: ParserState): void {
 }
 
 /**
+ * Returns true if exotic whitespace
+ *
+ * @param {number} code
+ * @returns {boolean}
+ */
+export function isExoticWhiteSpace(code: number): boolean {
+  return (
+    code === Chars.NonBreakingSpace ||
+    code === Chars.NextLine ||
+    code === Chars.Ogham ||
+    (code >= Chars.EnQuad && code <= Chars.ZeroWidthSpace) ||
+    code === Chars.NarrowNoBreakSpace ||
+    code === Chars.MathematicalSpace ||
+    code === Chars.IdeographicSpace ||
+    code === Chars.ByteOrderMark
+  );
+}
+
+/**
  * Converts a value to hex
  *
  * @param {number} code
@@ -75,10 +94,9 @@ export function getMostLikelyUnicodeChar(state: ParserState): void {
 export function toHex(code: number): number {
   if (code < Chars.Zero) return -1;
   if (code <= Chars.Nine) return code - Chars.Zero;
-  if (code < Chars.UpperA) return -1;
-  if (code <= Chars.UpperF) return code - Chars.UpperA + 10;
-  if (code < Chars.LowerA) return -1;
-  if (code <= Chars.LowerF) return code - Chars.LowerA + 10;
+  let lowerCasedLetter = code | 32;
+  if (lowerCasedLetter < Chars.LowerA) return -1;
+  if (lowerCasedLetter <= Chars.LowerF) return lowerCasedLetter - Chars.LowerA + 10;
   return -1;
 }
 

@@ -81,7 +81,9 @@ function scanIdentifierOrKeywordSlowPath(
 ): Token {
   let marker = state.index;
   while (state.index < state.length) {
-    if (state.currentChar === Chars.Backslash) {
+    // Note: We could check if the 5th bit is set and the 7th bit is unset as we do in
+    // string literal scanning, but this is already a "slow path"
+    if (AsciiLookup[state.currentChar] & CharType.Backslash) {
       res += state.source.substring(marker, state.index);
       const cookedChar = scanIdentifierUnicodeEscape(state, context);
       if (!isIdentifierPart(cookedChar)) return Token.Invalid;

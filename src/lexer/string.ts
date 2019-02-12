@@ -24,23 +24,24 @@ export function scanStringLiteral(state: ParserState, context: Context): Token |
       nextChar(state);
       return Token.StringLiteral;
     }
+    if ((state.currentChar & 8) === 8) {
+      if (AsciiLookup[state.currentChar] & CharType.Backslash) {
+        state.tokenValue += state.source.slice(marker, state.index);
+        nextChar(state);
+        const code = scanEscape(state, context, /* isTemplate */ false);
+        if (code < 0) return Token.Invalid; // Note: This will throw in the parser
+        state.tokenValue += fromCodePoint(code);
+        marker = state.index;
+        continue;
+      }
 
-    if (AsciiLookup[state.currentChar] & CharType.Backslash) {
-      state.tokenValue += state.source.slice(marker, state.index);
-      nextChar(state);
-      const code = scanEscape(state, context, /* isTemplate */ false);
-      if (code < 0) return Token.Invalid; // Note: This will throw in the parser
-      state.tokenValue += fromCodePoint(code);
-      marker = state.index;
-      continue;
+      if (
+        ((state.currentChar & 83) < 3 && state.currentChar === Chars.CarriageReturn) ||
+        state.currentChar === Chars.LineFeed
+      ) {
+        report(state, Errors.InvalidStringLT);
+      }
     }
-
-    // Optimized to make JSON subset of JS, and it also do a
-    // fast check for characters that require special handling.
-    if (state.currentChar === Chars.CarriageReturn || state.currentChar === Chars.LineFeed) {
-      report(state, Errors.InvalidStringLT);
-    }
-
     nextChar(state);
   }
 

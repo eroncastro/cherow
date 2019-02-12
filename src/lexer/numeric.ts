@@ -1,8 +1,8 @@
 import { Token } from '../token';
-import { reportAt, Errors } from '../errors';
+import { reportAt, report, Errors } from '../errors';
 import { isIdentifierStart } from '../unicode';
 import { Chars, AsciiLookup, CharType } from '../chars';
-import { ParserState, Context, fromCodePoint } from '../common';
+import { ParserState, Context } from '../common';
 import { ScannerFlags, Escape, nextChar, toHex } from './common';
 
 /**
@@ -12,7 +12,7 @@ import { ScannerFlags, Escape, nextChar, toHex } from './common';
  *
  * @param {ParserState} state
  * @param {Context} context
- * @param {boolean} isFloat
+ * @param {ScannerFlags} type
  * @returns {Token}
  */
 export function scanNumericLiterals(state: ParserState, context: Context, type: ScannerFlags): Token {
@@ -115,6 +115,8 @@ export function scanNumericLiterals(state: ParserState, context: Context, type: 
   if (AsciiLookup[state.currentChar] & (CharType.Decimal | CharType.Letters) || isIdentifierStart(state.currentChar)) {
     type & ScannerFlags.LeadingDecimal
       ? reportAt(state, marker, state.line, leadingErrPos - 1, Errors.InvalidImplicitOctals)
+      : isBigInt
+      ? report(state, Errors.InvalidBigInt)
       : reportAt(state, marker, state.line, marker, Errors.IDStartAfterNumber);
   }
   if (type & ScannerFlags.LeadingDecimal) {

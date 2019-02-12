@@ -35,16 +35,18 @@ export function scanTemplate(state: ParserState, context: Context, fromTick: boo
       nextChar(state);
       return (fromTick ? Token.NoSubstitutionTemplate : Token.TemplateTail) | (hasBadEscapes ? Token.BadEscape : 0);
     }
-
-    if (AsciiLookup[state.currentChar] & CharType.SlowPath) {
-      nextChar(state);
-      const code = scanEscape(state, context, /* isTemplate */ true);
-      // For raw template literal syntax, we have already consumed `NotEscapeSequence`,
-      // so all we have to do is to set the local boolean to 'true' if the escapes are incomplete
-      if (code === Escape.Incomplete) hasBadEscapes = true;
-      else if (code === Escape.Invalid) return Token.Invalid;
-      state.tokenValue += fromCodePoint(code);
-      marker = state.index;
+    if ((state.currentChar & 8) === 8) {
+      if (AsciiLookup[state.currentChar] & CharType.Backslash) {
+        nextChar(state);
+        const code = scanEscape(state, context, /* isTemplate */ true);
+        // For raw template literal syntax, we have already consumed `NotEscapeSequence`,
+        // so all we have to do is to set the local boolean to 'true' if the escapes are incomplete
+        if (code === Escape.Incomplete) hasBadEscapes = true;
+        else if (code === Escape.Invalid) return Token.Invalid;
+        state.tokenValue += fromCodePoint(code);
+        marker = state.index;
+      }
+      // falls through
     }
   }
 

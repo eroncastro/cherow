@@ -1,6 +1,6 @@
 import { Context, ParserState, fromCodePoint, Flags } from '../common';
 import { Chars, AsciiLookup, CharType } from '../chars';
-import { nextChar, advance, ScannerFlags, getMostLikelyUnicodeChar } from './common';
+import { nextChar, advance, ScannerFlags, isExoticWhiteSpace, getMostLikelyUnicodeChar } from './common';
 import { Token } from '../token';
 import { scanNumericLiterals } from './numeric';
 import { scanIdentifierOrKeyword, scanPrivatemame } from './identifier';
@@ -541,42 +541,26 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
         state.line++;
         continue;
       }
-      /* exotic whitespace */
-      switch (state.currentChar) {
-        case Chars.NonBreakingSpace:
-        case Chars.Ogham:
-        case Chars.EnQuad:
-        case Chars.EmQuad:
-        case Chars.EnSpace:
-        case Chars.EmSpace:
-        case Chars.ThreePerEmSpace:
-        case Chars.FourPerEmSpace:
-        case Chars.SixPerEmSpace:
-        case Chars.FigureSpace:
-        case Chars.PunctuationSpace:
-        case Chars.ThinSpace:
-        case Chars.HairSpace:
-        case Chars.NarrowNoBreakSpace:
-        case Chars.MathematicalSpace:
-        case Chars.IdeographicSpace:
-        case Chars.ZeroWidthNoBreakSpace:
-          nextChar(state);
-          return Token.WhiteSpace;
-        default:
-          getMostLikelyUnicodeChar(state);
-          if (!isIdentifierStart(state.currentChar)) {
-            reportAt(
-              state,
-              state.index,
-              state.line,
-              state.startIndex,
-              Errors.IllegalCaracter,
-              fromCodePoint(state.currentChar)
-            );
-          }
-          state.tokenValue = state.source.slice(state.startIndex, state.index);
-          return Token.Identifier;
+
+      // Exotic whitespace
+      if (isExoticWhiteSpace(state.currentChar)) {
+        nextChar(state);
+        continue;
       }
+
+      getMostLikelyUnicodeChar(state);
+      if (!isIdentifierStart(state.currentChar)) {
+        reportAt(
+          state,
+          state.index,
+          state.line,
+          state.startIndex,
+          Errors.IllegalCaracter,
+          fromCodePoint(state.currentChar)
+        );
+      }
+      state.tokenValue = state.source.slice(state.startIndex, state.index);
+      return Token.Identifier;
     }
   }
 
