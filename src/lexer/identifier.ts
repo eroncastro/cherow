@@ -4,62 +4,7 @@ import { isIdentifierStart, isIdentifierPart } from '../unicode';
 import { Chars, CharType, AsciiLookup } from '../chars';
 import { Context } from '../common';
 import { ParserState } from '../common';
-import { ScannerFlags, Escape, nextChar, toHex, getMostLikelyUnicodeChar, fromCodePoint } from './common';
-
-/**
- * Scans maybe identifier. This is a 'slow path', but optimized
- * to be a litle faster
- *
- * @param {ParserState} state
- * @returns {(Token | void)}
- */
-export function scanMaybeIdentifier(state: ParserState, type: ScannerFlags): any {
-  if ((state.currentChar ^ Chars.ParagraphSeparator) <= 1) {
-    type = (type & ~ScannerFlags.LastIsCR) | ScannerFlags.NewLine;
-    state.index++;
-    state.column = 0;
-    state.line++;
-    console.log(type);
-    return type;
-  }
-
-  /* exotic whitespace */
-  switch (state.currentChar) {
-    case Chars.NonBreakingSpace:
-    case Chars.Ogham:
-    case Chars.EnQuad:
-    case Chars.EmQuad:
-    case Chars.EnSpace:
-    case Chars.EmSpace:
-    case Chars.ThreePerEmSpace:
-    case Chars.FourPerEmSpace:
-    case Chars.SixPerEmSpace:
-    case Chars.FigureSpace:
-    case Chars.PunctuationSpace:
-    case Chars.ThinSpace:
-    case Chars.HairSpace:
-    case Chars.NarrowNoBreakSpace:
-    case Chars.MathematicalSpace:
-    case Chars.IdeographicSpace:
-    case Chars.ZeroWidthNoBreakSpace:
-      nextChar(state);
-      return Token.WhiteSpace;
-    default:
-      getMostLikelyUnicodeChar(state);
-      if (!isIdentifierStart(state.currentChar)) {
-        reportAt(
-          state,
-          state.index,
-          state.line,
-          state.startIndex,
-          Errors.IllegalCaracter,
-          fromCodePoint(state.currentChar)
-        );
-      }
-      state.tokenValue = state.source.slice(state.startIndex, state.index);
-      return Token.Identifier;
-  }
-}
+import { ScannerFlags, Escape, nextChar, toHex } from './common';
 
 /**
  * Scans private name
