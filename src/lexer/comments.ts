@@ -1,7 +1,7 @@
-import { ParserState, Context } from '../common';
+import { ParserState, Context, Flags } from '../common';
 import { Chars } from '../chars';
 import { report, Errors } from '../errors';
-import { ScannerFlags, nextChar } from './common';
+import { ScannerFlags, nextChar, advance } from './common';
 
 /**
  * Skips hashbang - Stage 3 proposal
@@ -36,15 +36,17 @@ export function skipSingleLineComment(state: ParserState, type: ScannerFlags): S
         state.column = 0;
         state.line++;
         if (state.index < state.length && state.source.charCodeAt(state.index) === Chars.LineFeed) state.index++;
-        return type | ScannerFlags.NewLine;
+        state.flags |= Flags.PrecedingLineBreak;
+        return (type |= ScannerFlags.NewLine);
       } else if (next === Chars.LineFeed || (next ^ Chars.ParagraphSeparator) <= 1) {
         state.index++;
         state.column = 0;
         state.line++;
-        return type | ScannerFlags.NewLine;
+        state.flags |= Flags.PrecedingLineBreak;
+        return (type |= ScannerFlags.NewLine);
       }
     }
-    nextChar(state);
+    advance(state);
   }
 
   return type;
@@ -63,6 +65,7 @@ export function skipMultilineComment(state: ParserState, type: ScannerFlags): an
     const next = state.source.charCodeAt(state.index);
     if ((next - 0xe) & 0x2000) {
       if (next === Chars.CarriageReturn) {
+        state.flags |= Flags.PrecedingLineBreak;
         type |= ScannerFlags.NewLine | ScannerFlags.LastIsCR;
         state.index++;
         state.column = 0;
@@ -76,20 +79,21 @@ export function skipMultilineComment(state: ParserState, type: ScannerFlags): an
         type = (type & ~ScannerFlags.LastIsCR) | ScannerFlags.NewLine;
       } else if ((next ^ Chars.ParagraphSeparator) <= 1) {
         type = (type & ~ScannerFlags.LastIsCR) | ScannerFlags.NewLine;
+        state.flags |= Flags.PrecedingLineBreak;
         state.index++;
         state.column = 0;
         state.line++;
       }
     } else if (next === Chars.Asterisk) {
       nextChar(state);
-      type &= ~ScannerFlags.LastIsCR;
+      type = type & ~ScannerFlags.LastIsCR;
       if (state.currentChar === Chars.Slash) {
         nextChar(state);
         return type;
       }
     } else {
-      type &= ~ScannerFlags.LastIsCR;
-      nextChar(state);
+      type = type & ~ScannerFlags.LastIsCR;
+      advance(state);
     }
   }
   // Unterminated multi-line comment.

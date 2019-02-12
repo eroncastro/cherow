@@ -1,6 +1,6 @@
 import { Context, ParserState, fromCodePoint, Flags } from '../common';
 import { Chars, AsciiLookup, CharType } from '../chars';
-import { nextChar, ScannerFlags, getMostLikelyUnicodeChar } from './common';
+import { nextChar, advance, ScannerFlags, getMostLikelyUnicodeChar } from './common';
 import { Token } from '../token';
 import { scanNumericLiterals } from './numeric';
 import { scanIdentifierOrKeyword, scanPrivatemame } from './identifier';
@@ -229,6 +229,7 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
         // line terminators
         case Token.LineFeed:
           state.index++;
+          state.flags |= Flags.PrecedingLineBreak;
           if ((type & ScannerFlags.LastIsCR) < 1) {
             state.column = 0;
             state.line++;
@@ -238,6 +239,7 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
 
         case Token.CarriageReturn:
           type |= ScannerFlags.NewLine | ScannerFlags.LastIsCR;
+          state.flags |= Flags.PrecedingLineBreak;
           state.index++;
           state.column = 0;
           state.line++;
@@ -271,14 +273,14 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
           if (state.currentChar !== Chars.EqualSign) return Token.Negate;
           nextChar(state);
           if (state.currentChar !== Chars.EqualSign) return Token.LooseNotEqual;
-          nextChar(state);
+          advance(state);
           return Token.StrictNotEqual;
 
         // `%`, `%=`
         case Token.Modulo:
           nextChar(state);
           if (state.currentChar !== Chars.EqualSign) return Token.Modulo;
-          nextChar(state);
+          advance(state);
           return Token.ModuloAssign;
 
         // `*`, `**`, `*=`, `**=`
@@ -303,7 +305,7 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
         case Token.BitwiseXor:
           nextChar(state);
           if (state.currentChar !== Chars.EqualSign) return Token.BitwiseXor;
-          nextChar(state);
+          advance(state);
           return Token.BitwiseXorAssign;
 
         // `+`, `++`, `+=`
@@ -313,12 +315,12 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
           const next = state.currentChar;
 
           if (next === Chars.Plus) {
-            nextChar(state);
+            advance(state);
             return Token.Increment;
           }
 
           if (next === Chars.EqualSign) {
-            nextChar(state);
+            advance(state);
             return Token.AddAssign;
           }
 
@@ -342,12 +344,12 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
               type = skipSingleLineComment(state, type);
               continue;
             }
-            nextChar(state);
+            advance(state);
             return Token.Decrement;
           }
 
           if (next === Chars.EqualSign) {
-            nextChar(state);
+            advance(state);
             return Token.SubtractAssign;
           }
 
@@ -369,10 +371,10 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
             } else if (context & Context.AllowRegExp) {
               // return scanRegExp(state, context);
             } else if (ch === Chars.EqualSign) {
-              nextChar(state);
+              advance(state);
               return Token.DivideAssign;
             } else if (ch === Chars.GreaterThan) {
-              nextChar(state);
+              advance(state);
               return Token.JSXAutoClose;
             }
           }
@@ -389,14 +391,14 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
             case Chars.LessThan:
               nextChar(state);
               if ((state.currentChar as number) === Chars.EqualSign) {
-                nextChar(state);
+                advance(state);
                 return Token.ShiftLeftAssign;
               } else {
                 return Token.ShiftLeft;
               }
 
             case Chars.EqualSign:
-              nextChar(state);
+              advance(state);
               return Token.LessThanOrEqual;
 
             case Chars.Exclamation:
@@ -420,7 +422,7 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
                 if (next === Chars.Asterisk || next === Chars.Slash) break;
               }
 
-              nextChar(state);
+              advance(state);
               return Token.JSXClose;
             }
 
@@ -438,13 +440,13 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
           if (next === Chars.EqualSign) {
             nextChar(state);
             if (state.currentChar === Chars.EqualSign) {
-              nextChar(state);
+              advance(state);
               return Token.StrictEqual;
             } else {
               return Token.LooseEqual;
             }
           } else if (next === Chars.GreaterThan) {
-            nextChar(state);
+            advance(state);
             return Token.Arrow;
           }
 
@@ -458,10 +460,10 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
           const next = state.currentChar;
 
           if (next === Chars.VerticalBar) {
-            nextChar(state);
+            advance(state);
             return Token.LogicalOr;
           } else if (next === Chars.EqualSign) {
-            nextChar(state);
+            advance(state);
             return Token.BitwiseOrAssign;
           }
 
@@ -488,13 +490,13 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
             if (next === Chars.GreaterThan) {
               nextChar(state);
               if (state.currentChar === Chars.EqualSign) {
-                nextChar(state);
+                advance(state);
                 return Token.LogicalShiftRightAssign;
               } else {
                 return Token.LogicalShiftRight;
               }
             } else if (next === Chars.EqualSign) {
-              nextChar(state);
+              advance(state);
               return Token.ShiftRightAssign;
             }
           }
@@ -509,12 +511,12 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
           const next = state.currentChar;
 
           if (next === Chars.Ampersand) {
-            nextChar(state);
+            advance(state);
             return Token.LogicalAnd;
           }
 
           if (next === Chars.EqualSign) {
-            nextChar(state);
+            advance(state);
             return Token.BitwiseAndAssign;
           }
 
@@ -533,6 +535,7 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
     } else {
       if ((state.currentChar ^ Chars.ParagraphSeparator) <= 1) {
         type = (type & ~ScannerFlags.LastIsCR) | ScannerFlags.NewLine;
+        state.flags |= Flags.PrecedingLineBreak;
         state.index++;
         state.column = 0;
         state.line++;
@@ -576,8 +579,6 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
       }
     }
   }
-
-  if (type & ScannerFlags.NewLine) state.flags |= Flags.PrecedingLineBreak;
 
   return Token.EndOfSource;
 }

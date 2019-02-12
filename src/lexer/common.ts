@@ -25,7 +25,15 @@ export const enum Escape {
   Incomplete = -2,
   Invalid = -1
 }
-
+/**
+ * Advance to the next token in the stream
+ *
+ * @param {ParserState} state
+ */
+export function advance(state: ParserState): void {
+  state.index++;
+  state.column++;
+}
 /**
  * Returns the next char in the stream if not EOL
  *
