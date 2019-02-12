@@ -13,13 +13,14 @@ import { ScannerFlags, Escape, nextChar, toHex, getMostLikelyUnicodeChar, fromCo
  * @param {ParserState} state
  * @returns {(Token | void)}
  */
-export function scanMaybeIdentifier(state: ParserState): Token | void {
+export function scanMaybeIdentifier(state: ParserState, type: ScannerFlags): any {
   if ((state.currentChar ^ Chars.ParagraphSeparator) <= 1) {
-    state.flags = (state.flags & ~ScannerFlags.LastIsCR) | ScannerFlags.PrecedingLineBreak;
-    state.currentChar = state.source.charCodeAt(++state.index);
+    type = (type & ~ScannerFlags.LastIsCR) | ScannerFlags.NewLine;
+    state.index++;
     state.column = 0;
     state.line++;
-    return Token.WhiteSpace;
+    console.log(type);
+    return type;
   }
 
   /* exotic whitespace */

@@ -13,7 +13,8 @@ export const enum CharType {
   Quote = 1 << 8,
   WhiteSpace = 1 << 9 | LineTerminator,
   Letters = IDContinue | IDStart,
-  Backslash = SlowPath
+  Backslash = SlowPath,
+  WhiteSpaceOrLineTerminator = WhiteSpace | LineTerminator
 }
 
 /*@internal*/

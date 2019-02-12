@@ -29,7 +29,8 @@ export const enum Context {
  * The mutable parser flags, in case any flags need passed by reference.
  */
 export const enum Flags {
-  None = 0
+  None = 0,
+  PrecedingLineBreak = 1 << 0
 }
 
 /**

@@ -1,8 +1,7 @@
 import { ParserState, Context } from '../common';
 import { Chars } from '../chars';
-import { Token } from '../token';
 import { report, Errors } from '../errors';
-import { ScannerFlags, nextChar } from './common';
+import { ScannerFlags, nextChar, consumeOpt } from './common';
 
 /**
  * Skips hashbang - Stage 3 proposal
@@ -10,14 +9,45 @@ import { ScannerFlags, nextChar } from './common';
  * @param {ParserState} state
  * @param {Context} context
  */
-export function skipHashBang(state: ParserState, context: Context): void {
+export function skipHashBang(state: ParserState, context: Context, type: ScannerFlags): void {
   if (
     context & Context.OptionsNext &&
     state.currentChar === Chars.Hash &&
     state.source.charCodeAt(state.index + 1) === Chars.Exclamation
   ) {
-    skipSingleLineComment(state);
+    skipSingleLineComment(state, type);
   }
+}
+
+/**
+ * Skips single line comments
+ *
+ * @param {ParserState} state
+ * @param {ScannerFlags} type
+ * @returns {ScannerFlags}
+ */
+export function skipSingleLineComment(state: ParserState, type: ScannerFlags): ScannerFlags {
+  while (state.index < state.length) {
+    const next = state.source.charCodeAt(state.index);
+
+    if ((next - 0xe) & 0x2000) {
+      if (next === Chars.CarriageReturn) {
+        state.index++;
+        state.column = 0;
+        state.line++;
+        if (state.index < state.length && state.source.charCodeAt(state.index) === Chars.LineFeed) state.index++;
+        return type | ScannerFlags.NewLine;
+      } else if (next === Chars.LineFeed || (next ^ Chars.ParagraphSeparator) <= 1) {
+        state.index++;
+        state.column = 0;
+        state.line++;
+        return type | ScannerFlags.NewLine;
+      }
+    }
+    nextChar(state);
+  }
+
+  return type;
 }
 
 /**
@@ -25,73 +55,40 @@ export function skipHashBang(state: ParserState, context: Context): void {
  * and does a fast check for characters that require special handling.
  *
  * @param {ParserState} state
- * @returns {(Token | void)}
+ * @param {ScannerFlags} type
+ * @returns {*}
  */
-export function skipMultilineComment(state: ParserState): Token | void {
+export function skipMultilineComment(state: ParserState, type: ScannerFlags): any {
   while (state.index < state.length) {
-    const next = state.currentChar;
+    const next = state.source.charCodeAt(state.index);
     if ((next - 0xe) & 0x2000) {
       if (next === Chars.CarriageReturn) {
-        state.flags |= ScannerFlags.PrecedingLineBreak | ScannerFlags.LastIsCR;
-        state.currentChar = state.source.charCodeAt(++state.index);
+        type |= ScannerFlags.NewLine | ScannerFlags.LastIsCR;
+        state.index++;
         state.column = 0;
         state.line++;
       } else if (next === Chars.LineFeed) {
-        state.currentChar = state.source.charCodeAt(++state.index);
-        if ((state.flags & ScannerFlags.LastIsCR) === 0) {
+        state.index++;
+        if ((type & ScannerFlags.LastIsCR) < 1) {
           state.column = 0;
           state.line++;
         }
-        state.flags = (state.flags & ~ScannerFlags.LastIsCR) | ScannerFlags.PrecedingLineBreak;
-      } else if ((state.currentChar ^ Chars.ParagraphSeparator) <= 1) {
-        state.flags = (state.flags & ~ScannerFlags.LastIsCR) | ScannerFlags.PrecedingLineBreak;
-        state.currentChar = state.source.charCodeAt(++state.index);
+        type = (type & ~ScannerFlags.LastIsCR) | ScannerFlags.NewLine;
+      } else if ((next ^ Chars.ParagraphSeparator) <= 1) {
+        type = (type & ~ScannerFlags.LastIsCR) | ScannerFlags.NewLine;
+        state.index++;
         state.column = 0;
         state.line++;
       }
     } else if (next === Chars.Asterisk) {
       nextChar(state);
-      state.flags &= ~ScannerFlags.LastIsCR;
-      if (state.currentChar === Chars.Slash) {
-        nextChar(state);
-        return Token.WhiteSpace;
-      }
+      type &= ~ScannerFlags.LastIsCR;
+      if (consumeOpt(state, Chars.Slash)) return type;
     } else {
+      type &= ~ScannerFlags.LastIsCR;
       nextChar(state);
     }
   }
-
   // Unterminated multi-line comment.
   report(state, Errors.UnterminatedComment);
-}
-
-/**
- * Skips single line comments
- *
- * @param {ParserState} state
- * @returns {Token}
- */
-export function skipSingleLineComment(state: ParserState): Token {
-  while (state.index < state.source.length) {
-    const next = state.currentChar;
-    if ((next - 0xe) & 0x2000) {
-      if (next === Chars.CarriageReturn) {
-        state.currentChar = state.source.charCodeAt(++state.index);
-        state.column = 0;
-        state.line++;
-        if (state.index < state.source.length && state.source.charCodeAt(state.index) === Chars.LineFeed) state.index++;
-        state.flags |= ScannerFlags.PrecedingLineBreak;
-        return Token.WhiteSpace;
-      } else if (next === Chars.LineFeed || (next ^ Chars.ParagraphSeparator) <= 1) {
-        state.flags |= ScannerFlags.PrecedingLineBreak;
-        ++state.line;
-        state.currentChar = state.source.charCodeAt(++state.index);
-        state.column = 0;
-        return Token.WhiteSpace;
-      }
-    }
-    nextChar(state);
-  }
-
-  return Token.WhiteSpace;
 }

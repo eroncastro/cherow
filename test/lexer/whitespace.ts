@@ -8,300 +8,18 @@ describe('src/scanner/seek', () => {
   function pass(name: string, opts: any) {
     it(name, () => {
       const state = create(opts.source);
-      const token = nextToken(state, opts.ctx);
+      const token = nextToken(state, Context.OptionsWebCompat);
       t.deepEqual(
         {
-          token,
+          //        token,
+          source: state.source,
           line: state.line,
-          column: state.column,
-          index: state.index,
-          octalMessage: state.octalMessage,
-          octalPos: state.octalPos
+          column: state.column
         },
-        {
-          token: opts.token,
-          octalMessage: opts.octalMessage,
-          octalPos: opts.octalPos,
-          line: opts.line,
-          column: opts.column,
-          index: opts.end
-        }
+        opts
       );
     });
   }
-
-  function fail(name: string, source: string, context: Context) {
-    it(name, () => {
-      const state = create(source);
-      t.throws(() => nextToken(state, context));
-    });
-  }
-
-  fail('fails on unclosed multi line comment', '/** ', Context.Strict);
-  //fail('fails on unclosed multi line comment', '//\m ', Context.Strict);
-  fail('fails on unclosed multi line comment', '\u180Ef', Context.Strict);
-
-  pass('skips nothing', {
-    source: '',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 0,
-    end: 0,
-
-    line: 1,
-    column: 0
-  });
-
-  pass('skips spaces', {
-    source: '        ',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 8,
-    end: 8,
-
-    line: 1,
-    column: 8
-  });
-
-  pass('skips tabs', {
-    source: '\t\t\t\t\t\t\t\t',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 8,
-    end: 8,
-
-    line: 1,
-    column: 8
-  });
-
-  pass('skips vertical tabs', {
-    source: '\v\v\v\v\v\v\v\v',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 8,
-    end: 8,
-
-    line: 1,
-    column: 8
-  });
-
-  pass('skips vertical tabs', {
-    source: '\u2007',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 1,
-    end: 1,
-    line: 1,
-    column: 1
-  });
-
-  pass('skips mixed exotic whitespace', {
-    source: '\u2007\u000B\u202F\u3000\u1680\u2000',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 1,
-    end: 6,
-    line: 1,
-    column: 6
-  });
-
-  passAll(
-    lt => `skips ${lt}s`,
-    lt => ({
-      source: `${lt}${lt}${lt}${lt}${lt}${lt}${lt}${lt}`,
-      token: Token.EndOfSource,
-      value: '',
-      raw: '',
-      newline: true,
-      start: 8,
-      end: 8,
-
-      line: 9,
-      column: 0
-    })
-  );
-
-  pass('skips mixed whitespace', {
-    source: '    \t \r\n \n\r \v\f\t ',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: true,
-    start: 16,
-    end: 16,
-
-    line: 4,
-    column: 5
-  });
-
-  pass('skips multiline comment with space', {
-    source: '/*\\u0020 multi line \\u0020 comment \\u0020*/',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 43,
-    end: 43,
-    line: 1,
-    column: 43
-  });
-
-  pass('skips multiline comment with vertical tab', {
-    source: '/*\\u000B multi line \\u000B comment \\u000B x = 1;*/',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 50,
-    end: 50,
-    line: 1,
-    column: 50
-  });
-
-  pass('skips multiline comment with space', {
-    source: '//\\u00A0 single line \\u00A0 comment \\u00A0 x = 1;',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 49,
-    end: 49,
-    line: 1,
-    column: 49
-  });
-
-  pass('skips single and multi line comments used together', {
-    source: `/* var
-    *///x*/`,
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: true,
-    start: 18,
-    end: 18,
-    line: 2,
-    column: 11
-  });
-
-  pass('skips single line comment with multiple new line', {
-    source: '//\n\n\n\n\n\n\n\n\n\n\n',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: true,
-    start: 13,
-    end: 13,
-    line: 12,
-    column: 0
-  });
-
-  pass('skips single line comment with multiple carriage return', {
-    source: '//\r\r\r\r\r\r\r\r\r\r\r',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: true,
-    start: 13, // should have been 24
-    end: 13,
-    line: 12, // should have been 1
-    column: 0
-  });
-
-  pass('skips single line comment with multiple carriage return and line feed', {
-    source: '//\r\r\n\n\r\r\r\r\n\r\n',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: true,
-    start: 13,
-    end: 13, // should have been 24
-    line: 9,
-    column: 0
-  });
-
-  pass('skips multiline comment with space', {
-    source: '/* multi line comment x = 1;*/',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 30,
-    end: 30,
-    line: 1,
-    column: 30
-  });
-
-  pass('skips multiline comment with space', {
-    source: '/* multi line comment x = 1;*/',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 30,
-    end: 30,
-    line: 1,
-    column: 30
-  });
-
-  pass('skips multiline comment with space', {
-    source: '/* multi line comment x = 1;*/',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 30,
-    end: 30,
-    line: 1,
-    column: 30
-  });
-
-  pass('skips multiline comment with space', {
-    source: '/* multi line comment x = 1;*/',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 30,
-    end: 30,
-    line: 1,
-    column: 30
-  });
-
-  pass('skips multiline comment with space', {
-    source: '/* multi line comment x = 1;*/',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 30,
-    end: 30,
-    line: 1,
-    column: 30
-  });
-
-  pass('skips multiline comment with space', {
-    source: '/* multi line comment x = 1;*/',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 30,
-    end: 30,
-    line: 1,
-    column: 30
-  });
 
   function passAll(name: (lt: string) => string, opts: (lt: string) => any) {
     pass(name('line feed'), opts('\n'));
@@ -311,61 +29,93 @@ describe('src/scanner/seek', () => {
     pass(name('paragraph separators'), opts('\u2029'));
   }
 
-  pass('skips multiline comments with nothing', {
-    source: '  \t /* foo * /* bar */  ',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 24,
-    end: 24,
+  pass('skips nothing', {
+    source: '',
+    //seek: Seek.None,
+    //hasNext: false,
     line: 1,
-    column: 24
+    column: 0
+  });
+
+  pass('skips spaces', {
+    source: '        ',
+    //seek: Seek.SameLine,
+    //hasNext: false,
+    line: 1,
+    column: 8
+  });
+
+  pass('skips tabs', {
+    source: '\t\t\t\t\t\t\t\t',
+    //seek: Seek.SameLine,
+    //hasNext: false,
+    line: 1,
+    column: 8
+  });
+
+  pass('skips vertical tabs', {
+    source: '\v\v\v\v\v\v\v\v',
+    //  seek: Seek.SameLine,
+    //  hasNext: false,
+    line: 1,
+    column: 8
   });
 
   passAll(
-    lt => `skips multiple single line comments with ${lt}`,
+    lt => `skips ${lt}s`,
     lt => ({
-      source: `  \t // foo bar${lt} // baz ${lt} //`,
-      token: Token.EndOfSource,
-      value: '',
-      raw: '',
-      newline: true,
-      start: 27,
-      end: 27,
-
-      line: 3,
-      column: 3
+      source: `${lt}${lt}${lt}${lt}${lt}${lt}${lt}${lt}`,
+      //seek: Seek.NewLine,
+      //hasNext: false,
+      line: 9,
+      column: 0
     })
   );
 
+  pass('skips mixed whitespace', {
+    source: '    \t \r\n \n\r \v\f\t ',
+    //seek: Seek.NewLine,
+    //hasNext: false,
+    line: 4,
+    column: 5
+  });
+
   passAll(
-    lt => `skips single line comments with ${lt}`,
+    () => 'skips single line comments with line feed',
     lt => ({
       source: `  \t // foo bar${lt}  `,
-      token: Token.EndOfSource,
-      value: '',
-      raw: '',
-      newline: true,
-      start: 17,
-      end: 17,
-
+      //  seek: Seek.NewLine,
+      //  hasNext: false,
       line: 2,
       column: 2
     })
   );
 
   passAll(
+    lt => `skips multiple single line comments with ${lt}`,
+    lt => ({
+      source: `  \t // foo bar${lt} // baz ${lt} //`,
+      //seek: Seek.NewLine,
+      //hasNext: false,
+      line: 3,
+      column: 3
+    })
+  );
+
+  pass('skips multiline comments with nothing', {
+    source: '  \t /* foo * /* bar */  ',
+    //seek: Seek.SameLine,
+    //hasNext: false,
+    line: 1,
+    column: 24
+  });
+
+  passAll(
     lt => `skips multiline comments with ${lt}`,
     lt => ({
       source: `  \t /* foo * /* bar ${lt} */  `,
-      token: Token.EndOfSource,
-      value: '',
-      raw: '',
-      newline: true,
-      start: 26,
-      end: 26,
-
+      //  seek: Seek.NewLine,
+      //  hasNext: false,
       line: 2,
       column: 5
     })
@@ -375,28 +125,153 @@ describe('src/scanner/seek', () => {
     lt => `skips multiple multiline comments with ${lt}`,
     lt => ({
       source: `  \t /* foo bar${lt} *//* baz*/ ${lt} /**/`,
-      token: Token.EndOfSource,
-      value: '',
-      raw: '',
-      newline: true,
-      start: 33,
-      end: 33,
-
+      //seek: Seek.NewLine,
+      //hasNext: false,
       line: 3,
       column: 5
     })
   );
 
-  pass('avoids single HTML close comment w/o line terminator', {
-    source: '<!--  ',
-    token: Token.EndOfSource,
-    value: '',
-    raw: '',
-    newline: false,
-    start: 6,
-    end: 6,
-    hasNext: true,
-    line: 1,
-    column: 6
-  });
+  passAll(
+    lt => `skips HTML single line comments with ${lt}`,
+    lt => ({
+      source: `  \t <!-- foo bar${lt}  `,
+      // seek: Seek.NewLine,
+      // hasNext: false,
+      line: 2,
+      column: 2
+    })
+  );
+
+  passAll(
+    lt => `skips multiple HTML single line comments with ${lt}`,
+    lt => ({
+      source: `  \t <!-- foo bar${lt} <!-- baz ${lt} <!--`,
+      //seek: Seek.NewLine,
+      //hasNext: false,
+      line: 3,
+      column: 5
+    })
+  );
+
+  passAll(
+    lt => `skips single HTML close comment after ${lt}`,
+    lt => ({
+      source: `  \t ${lt}-->  `,
+      // seek: Seek.NewLine,
+      //hasNext: false,
+      line: 2,
+      column: 5
+    })
+  );
+
+  passAll(
+    lt => `skips line of single HTML close comment after ${lt}`,
+    lt => ({
+      source: `  \t ${lt}--> the comment extends to these characters${lt} `,
+      //  seek: Seek.NewLine,
+      //hasNext: false,
+      line: 3,
+      column: 1
+    })
+  );
+
+  passAll(
+    lt => `allows HTML close comment after ${lt} + WS`,
+    lt => ({
+      source: `  \t ${lt}   --> the comment extends to these characters${lt} `,
+      //seek: Seek.NewLine,
+      //hasNext: false,
+      line: 3,
+      column: 1
+    })
+  );
+
+  passAll(
+    lt => `skips single-line block on line of HTML close after ${lt}`,
+    lt => ({
+      source: `  \t /*${lt}*/ /* optional SingleLineDelimitedCommentSequence */    ${''}--> the comment extends to these characters${lt} `,
+      //seek: Seek.NewLine,
+      //hasNext: false,
+      line: 3,
+      column: 1
+    })
+  );
+
+  passAll(
+    lt => `skips 2 single-line block on line of HTML close after ${lt}`,
+    lt => ({
+      source: `  \t /*${lt}*/ /**/ /* second optional ${''}SingleLineDelimitedCommentSequence */    ${''}--> the comment extends to these characters${lt} `,
+      //seek: Seek.NewLine,
+      //hasNext: false,
+      line: 3,
+      column: 1
+    })
+  );
+
+  passAll(
+    lt => `skips block HTML close with ${lt} + empty line`,
+    lt => ({
+      source: `  \t /*${lt}*/  -->${lt} `,
+      //  seek: Seek.NewLine,
+      //  hasNext: false,
+      line: 3,
+      column: 1
+    })
+  );
+
+  passAll(
+    lt => `skips block HTML close with ${lt}`,
+    lt => ({
+      source: `  \t /*${lt}*/  --> the comment extends to these characters${lt} `,
+      // seek: Seek.NewLine,
+      // hasNext: false,
+      line: 3,
+      column: 1
+    })
+  );
+
+  passAll(
+    lt => `skips first line block HTML close with ${lt}`,
+    lt => ({
+      source: `  \t /* optional FirstCommentLine ${lt}*/  --> ` + `the comment extends to these characters${lt} `,
+      // seek: Seek.NewLine,
+      // hasNext: false,
+      line: 3,
+      column: 1
+    })
+  );
+
+  passAll(
+    lt => `skips multi block + HTML close with ${lt}`,
+    lt => ({
+      source: `  \t /*${lt}optional${lt}MultiLineCommentChars ${lt}*/  --> the comment extends to these characters${lt} `,
+      // seek: Seek.NewLine,
+      // hasNext: false,
+      line: 5,
+      column: 1
+    })
+  );
+
+  passAll(
+    lt => `skips multi block + single block + HTML close with ${lt}`,
+    lt => ({
+      source: `  \t /*${lt}*/ /* optional SingleLineDelimitedCommentSequence ${lt}*/  --> the comment extends to these characters${lt} `,
+      // seek: Seek.NewLine,
+      // hasNext: false,
+      line: 4,
+      column: 1
+    })
+  );
+
+  passAll(
+    lt => `skips multi block + 2 single block + HTML close with ${lt}`,
+    lt => ({
+      source: `  \t /*${lt}*/ /**/ /* optional SingleLineDelimitedCommentSequence ${lt}*/  --> the comment extends to these characters${lt} `,
+      //seek: Seek.NewLine,
+      //hasNext: false,
+      line: 4,
+      column: 1
+    })
+  );
 });

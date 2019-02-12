@@ -2,8 +2,7 @@ import { Token } from '../token';
 import { reportAt, Errors } from '../errors';
 import { isIdentifierStart } from '../unicode';
 import { Chars, AsciiLookup, CharType } from '../chars';
-import { Context, fromCodePoint } from '../common';
-import { ParserState } from '../common';
+import { ParserState, Context, fromCodePoint } from '../common';
 import { ScannerFlags, Escape, nextChar, toHex } from './common';
 
 /**
@@ -16,46 +15,45 @@ import { ScannerFlags, Escape, nextChar, toHex } from './common';
  * @param {boolean} isFloat
  * @returns {Token}
  */
-export function scanNumericLiterals(state: ParserState, context: Context, isFloat: boolean): Token {
-  let kind = ScannerFlags.Decimal;
-  let isNotFloat = !isFloat;
+export function scanNumericLiterals(state: ParserState, context: Context, type: ScannerFlags): Token {
+  let isNotFloat = (type & ScannerFlags.IsFloat) === 0;
   const marker = state.index;
   let leadingErrPos = marker;
 
-  if (!isFloat) {
+  if ((type & ScannerFlags.IsFloat) === 0) {
     if (state.currentChar === Chars.Zero) {
       nextChar(state);
       const lowerCasedLetters = state.currentChar | 32;
       // Hex
       if (lowerCasedLetters === Chars.LowerX) {
         nextChar(state);
-        kind = ScannerFlags.Hex;
+        type = ScannerFlags.Hex;
         state.tokenValue = scanHexDigits(state, marker);
         // Octal
       } else if (lowerCasedLetters === Chars.LowerO) {
         nextChar(state);
-        kind = ScannerFlags.Octal;
+        type = ScannerFlags.Octal;
         state.tokenValue = scanOctalDigits(state, marker);
         // Binary
       } else if (lowerCasedLetters === Chars.LowerB) {
         nextChar(state);
-        kind = ScannerFlags.Binary;
+        type = ScannerFlags.Binary;
         state.tokenValue = scanBinaryDigits(state, marker);
       } else if (AsciiLookup[state.currentChar] & CharType.Decimal) {
-        kind = ScannerFlags.ImplicitOctal;
+        type = ScannerFlags.ImplicitOctal;
         state.tokenValue = scanImplicitOctalDigits(state, context, marker);
         if (state.tokenValue === Escape.Invalid) {
-          kind = ScannerFlags.LeadingDecimal;
+          type = ScannerFlags.LeadingDecimal;
           leadingErrPos = state.index;
           isNotFloat = false;
         }
       } else if (state.currentChar < Chars.Zero || state.currentChar > Chars.Seven) {
-        kind = ScannerFlags.LeadingDecimal;
+        type = ScannerFlags.LeadingDecimal;
       } else isNotFloat = false;
     }
   }
 
-  if (kind & (ScannerFlags.Decimal | ScannerFlags.LeadingDecimal)) {
+  if (type & (ScannerFlags.Decimal | ScannerFlags.LeadingDecimal)) {
     if (isNotFloat) {
       let digit = 9;
       while (AsciiLookup[state.currentChar] & CharType.Decimal && digit >= 0) {
@@ -85,15 +83,15 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
 
   if (
     context & Context.OptionsNext &&
-    !isFloat &&
+    (type & ScannerFlags.IsFloat) === 0 &&
     state.currentChar === Chars.LowerN &&
-    kind & ScannerFlags.DecimalOrHexOrOctalOrBinary
+    type & ScannerFlags.DecimalOrHexOrOctalOrBinary
   ) {
     isBigInt = true;
 
     nextChar(state);
   } else if ((state.currentChar | 32) === Chars.LowerE) {
-    if ((kind & (ScannerFlags.Decimal | ScannerFlags.LeadingDecimal)) < 1) {
+    if ((type & (ScannerFlags.Decimal | ScannerFlags.LeadingDecimal)) < 1) {
       reportAt(state, marker, state.line, state.column, Errors.StrictDecimalWithLeadingZero);
     }
     nextChar(state);
@@ -115,17 +113,17 @@ export function scanNumericLiterals(state: ParserState, context: Context, isFloa
   // This case is only to prevent `3in x` and `3instanceof x` cases.
   // The next character must not be an identifier start or decimal digit.
   if (AsciiLookup[state.currentChar] & (CharType.Decimal | CharType.Letters) || isIdentifierStart(state.currentChar)) {
-    kind & ScannerFlags.LeadingDecimal
+    type & ScannerFlags.LeadingDecimal
       ? reportAt(state, marker, state.line, leadingErrPos - 1, Errors.InvalidImplicitOctals)
       : reportAt(state, marker, state.line, marker, Errors.IDStartAfterNumber);
   }
-  if (kind & ScannerFlags.LeadingDecimal) {
+  if (type & ScannerFlags.LeadingDecimal) {
     state.octalPos = { index: state.index, line: state.line, column: state.index - 1 };
     state.octalMessage = Errors.StrictDecimalWithLeadingZero;
   }
-  if ((kind & ScannerFlags.HexOrOctalOrBinaryOrImplicit) < 1) {
+  if ((type & ScannerFlags.HexOrOctalOrBinaryOrImplicit) < 1) {
     state.tokenValue =
-      kind & ScannerFlags.LeadingDecimal
+      type & ScannerFlags.LeadingDecimal
         ? parseFloat(state.source.slice(marker, state.index))
         : isBigInt
         ? parseInt(state.source.slice(marker, state.index), 0xa)
