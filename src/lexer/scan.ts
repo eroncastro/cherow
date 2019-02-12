@@ -547,7 +547,6 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
         nextChar(state);
         continue;
       }
-
       getMostLikelyUnicodeChar(state);
       if (!isIdentifierStart(state.currentChar)) {
         reportAt(

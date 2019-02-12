@@ -1,10 +1,10 @@
 import { Token, descKeywordTable } from '../token';
-import { report, reportAt, Errors } from '../errors';
-import { isIdentifierStart, isIdentifierPart } from '../unicode';
+import { reportAt, Errors } from '../errors';
+import { isIdentifierPart } from '../unicode';
 import { Chars, CharType, AsciiLookup } from '../chars';
 import { Context } from '../common';
 import { ParserState } from '../common';
-import { ScannerFlags, Escape, nextChar, toHex } from './common';
+import { fromCodePoint, Escape, nextChar, toHex } from './common';
 
 /**
  * Scans private name
@@ -85,9 +85,9 @@ function scanIdentifierOrKeywordSlowPath(
     // string literal scanning, but this is already a "slow path"
     if (AsciiLookup[state.currentChar] & CharType.Backslash) {
       res += state.source.substring(marker, state.index);
-      const cookedChar = scanIdentifierUnicodeEscape(state, context);
+      const cookedChar = scanIdentifierUnicodeEscape(state);
       if (!isIdentifierPart(cookedChar)) return Token.Invalid;
-      res += String.fromCodePoint(cookedChar);
+      res += fromCodePoint(cookedChar);
       marker = state.index;
     } else if (isIdentifierPart(state.currentChar)) {
       nextChar(state);
@@ -120,13 +120,12 @@ function scanIdentifierOrKeywordSlowPath(
  * Scans identifier unicode escape
  *
  * @param {ParserState} state
- * @param {Context} _
  * @returns {(number | Escape)}
  */
-function scanIdentifierUnicodeEscape(state: ParserState, _: Context): number | Escape {
+function scanIdentifierUnicodeEscape(state: ParserState): number | Escape {
   nextChar(state);
   if (state.currentChar !== Chars.LowerU)
-    reportAt(state, state.index, state.line, state.index - 1, Errors.InvalidUnicodeEscapeSequence);
+    reportAt(state, state.index, state.line, state.index - 1, Errors.InvalidEscapeIdentifier);
   // Any escape errors should point to the 'u'
   const errPos = state.index;
   nextChar(state);

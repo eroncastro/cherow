@@ -5,9 +5,8 @@ import { Chars } from '../chars';
 export const enum ScannerFlags {
   None = 0,
   NewLine = 1 << 0,
-  SameLine = 1 << 1,
-  LastIsCR = 1 << 2,
-  SeenDelimitedCommentEnd = 1 << 3, // Used to parse --> closing html comment properly
+  LastIsCR = 1 << 1,
+  SeenDelimitedCommentEnd = 1 << 2, // Used to parse --> closing html comment properly
   Decimal = 1 << 4,
   IsFloat = 1 << 5,
   LeadingDecimal = 1 << 6,

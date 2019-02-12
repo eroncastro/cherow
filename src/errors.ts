@@ -22,7 +22,8 @@ export const enum Errors {
   IllegalCaracter,
   MissingHexDigits,
   InvalidImplicitOctals,
-  InvalidStringLT
+  InvalidStringLT,
+  InvalidEscapeIdentifier
 }
 /*@internal*/
 export const errorMessages: {
@@ -48,7 +49,8 @@ export const errorMessages: {
   [Errors.IllegalCaracter]: "Illegal character '%0'",
   [Errors.MissingHexDigits]: 'Missing hex digits',
   [Errors.InvalidImplicitOctals]: 'Invalid implicit octal',
-  [Errors.InvalidStringLT]: 'Invalid line break in string literal'
+  [Errors.InvalidStringLT]: 'Invalid line break in string literal',
+  [Errors.InvalidEscapeIdentifier]: 'Only unicode escapes are legal in identifier names'
 };
 
 export class ParseError extends SyntaxError {
