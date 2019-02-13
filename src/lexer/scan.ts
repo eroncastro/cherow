@@ -1,4 +1,4 @@
-import { Context, ParserState, fromCodePoint, Flags } from '../common';
+import { Context, ParserState, PeekedState, fromCodePoint, Flags } from '../common';
 import { Chars, AsciiLookup, CharType } from '../chars';
 import { nextChar, advance, ScannerFlags, isExoticWhiteSpace, getMostLikelyUnicodeChar } from './common';
 import { Token } from '../token';
@@ -214,6 +214,12 @@ const tableLookup = [
  */
 export function nextToken(state: ParserState, context: Context): Token {
   state.flags &= ~Flags.PrecedingLineBreak;
+
+  if (state.peekedState) {
+    rewindState(state, state.peekedState);
+    state.peekedState = undefined;
+    return state.peekedToken;
+  }
   state.endIndex = state.index;
   state.endLine = state.line;
   state.endColumn = state.column;
@@ -627,4 +633,108 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
   }
 
   return Token.EndOfSource;
+}
+
+/**
+ * Improved lookahead. What it does is to simply peak ahead, and re-use the new token
+ * instead of doing a new 'nextToken' if you already have peeked ahead.
+ *
+ * Usage:
+ *
+ *        peekToken(state, context);
+ *        if (state.peekedToken === Token.Kleuver') return false;
+ *
+ * @param {ParserState} state
+ * @param {Context} context
+ * @returns {*}
+ */
+export function peekAhead(state: ParserState, context: Context): any {
+  // 1) Save current state
+  const {
+    index,
+    line,
+    column,
+    startIndex,
+    endIndex,
+    flags,
+    tokenValue,
+    currentChar,
+    token,
+    tokenRegExp,
+    tokenRaw,
+    endLine,
+    endColumn,
+    startLine,
+    startColumn,
+    octalPos,
+    octalMessage
+  } = state;
+
+  // 2) Save the new peeked token
+  state.peekedToken = nextToken(state, context);
+  // 3) Save the new state
+  state.peekedState = {
+    index: state.index,
+    line: state.line,
+    column: state.column,
+    startIndex: state.startIndex,
+    endIndex: state.endIndex,
+    flags: state.flags,
+    tokenValue: state.tokenValue,
+    currentChar: state.currentChar,
+    token: state.token,
+    tokenRegExp: state.tokenRegExp,
+    tokenRaw: state.tokenRaw,
+    endLine: state.endLine,
+    endColumn: state.endColumn,
+    startLine: state.startLine,
+    startColumn: state.startColumn,
+    octalPos: state.octalPos,
+    octalMessage: state.octalMessage
+  };
+
+  // 4) Rewind
+  state.index = index;
+  state.line = line;
+  state.column = column;
+  state.startIndex = startIndex;
+  state.endIndex = endIndex;
+  state.flags = flags;
+  state.tokenValue = tokenValue;
+  state.currentChar = currentChar;
+  state.tokenRaw = tokenRaw;
+  state.token = token;
+  state.tokenRegExp = tokenRegExp;
+  state.endLine = endLine;
+  state.endColumn = endColumn;
+  state.startLine = startLine;
+  state.startColumn = startColumn;
+  state.octalPos = octalPos;
+  state.octalMessage = octalMessage;
+}
+
+/**
+ * Rewind parser state to previous state
+ *
+ * @param {ParserState} state
+ * @param {PeekedState} peekedState
+ */
+function rewindState(state: ParserState, peekedState: PeekedState) {
+  state.index = peekedState.index;
+  state.line = peekedState.line;
+  state.column = peekedState.column;
+  state.startIndex = peekedState.startIndex;
+  state.endIndex = peekedState.endIndex;
+  state.flags = peekedState.flags;
+  state.tokenValue = peekedState.tokenValue;
+  state.currentChar = peekedState.currentChar;
+  state.tokenRaw = peekedState.tokenRaw;
+  state.token = peekedState.token;
+  state.tokenRegExp = peekedState.tokenRegExp;
+  state.endLine = peekedState.endLine;
+  state.endColumn = peekedState.endColumn;
+  state.startLine = peekedState.startLine;
+  state.startColumn = peekedState.startColumn;
+  state.octalPos = peekedState.octalPos;
+  state.octalMessage = peekedState.octalMessage;
 }

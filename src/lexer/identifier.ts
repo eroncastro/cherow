@@ -1,10 +1,10 @@
 import { Token, descKeywordTable } from '../token';
-import { reportAt, Errors } from '../errors';
-import { isIdentifierPart, isIdentifierStart } from '../unicode';
+import { reportAt, report, Errors } from '../errors';
+import { isIdentifierPart } from '../unicode';
 import { Chars, CharType, AsciiLookup } from '../chars';
 import { Context } from '../common';
 import { ParserState } from '../common';
-import { fromCodePoint, Escape, nextChar, toHex, getMostLikelyUnicodeChar } from './common';
+import { fromCodePoint, Escape, nextChar, toHex } from './common';
 
 /**
  * Scans private name
@@ -85,7 +85,7 @@ function scanIdentifierOrKeywordSlowPath(state: ParserState, context: Context, s
     // Note: We could check if the 5th bit is set and the 7th bit is unset as we do in
     // string literal scanning, but this is already a "slow path"
     if (AsciiLookup[state.currentChar] & CharType.Backslash) {
-      state.tokenValue += state.source.substring(marker, state.index);
+      state.tokenValue += state.source.slice(marker, state.index);
       const cookedChar = scanIdentifierUnicodeEscape(state);
       if (!isIdentifierPart(cookedChar)) return Token.Invalid;
       state.tokenValue += fromCodePoint(cookedChar);
@@ -93,17 +93,19 @@ function scanIdentifierOrKeywordSlowPath(state: ParserState, context: Context, s
     } else {
       if (state.currentChar >= 0xd800 && state.currentChar <= 0xdbff) {
         const lo = state.source.charCodeAt(state.index + 1);
-        if (lo >= 0xdc00 && lo <= 0xdfff) {
+        if ((lo & 0xfc00) === 0xdc00) {
           state.currentChar = ((state.currentChar & 0x3ff) << 10) | (lo & 0x3ff) | 0x10000;
           state.index++;
         }
       }
-      if (!isIdentifierPart(state.currentChar)) return Token.Invalid;
+      if (!isIdentifierPart(state.currentChar)) {
+        report(state, Errors.IllegalCaracter, fromCodePoint(state.currentChar));
+      }
       nextChar(state);
     }
   }
 
-  state.tokenValue += state.source.substring(marker, state.index);
+  state.tokenValue += state.source.slice(marker, state.index);
 
   const length = state.tokenValue.length;
 

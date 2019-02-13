@@ -18,6 +18,8 @@ export function create(source: string): ParserState {
     tokenValue: '',
     token: Token.EndOfSource,
     tokenRaw: '',
+    peekedToken: Token.EndOfSource,
+    peekedState: undefined,
     tokenRegExp: undefined,
     currentChar: source.charCodeAt(0), // current character
 

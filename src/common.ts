@@ -69,6 +69,8 @@ export interface ParserState {
   length: number;
   token: Token;
   tokenValue: any;
+  peekedToken: Token;
+  peekedState: PeekedState | void;
   tokenRaw: string;
   tokenRegExp: void | {
     pattern: string;
@@ -77,6 +79,32 @@ export interface ParserState {
   octalPos: OctalPos | undefined;
   octalMessage: Errors | undefined;
   currentChar: number;
+}
+
+/**
+ * The peeked interface.
+ */
+export interface PeekedState {
+  flags: Flags;
+  index: number;
+  line: number;
+  column: number;
+  startIndex: number;
+  endIndex: number;
+  tokenValue: '';
+  currentChar: number;
+  token: Token;
+  tokenRegExp: void | {
+    pattern: string;
+    flags: string;
+  };
+  tokenRaw: string;
+  endLine: number;
+  endColumn: number;
+  startLine: number;
+  startColumn: number;
+  octalPos: OctalPos | undefined;
+  octalMessage: Errors | undefined;
 }
 
 export function toHex(code: number): number {
