@@ -42,21 +42,25 @@ export function scanIdentifierOrKeyword(state: ParserState, context: Context): T
   if (state.currentChar <= 0x7f) {
     scanFlags = AsciiLookup[state.currentChar];
     while (state.index < state.length) {
-      const charFlags = AsciiLookup[state.currentChar];
       // We can't really prevent it if someone put a non-ascii character in the middle of their
       // identifier, so we need this extra check here :(
-      scanFlags = scanFlags | (state.currentChar > 0x7f ? CharType.MultiUnitChar : charFlags);
-      if (scanFlags & (CharType.MultiUnitChar | CharType.WhiteSpace)) break;
+      if (state.currentChar > 0x7f) {
+        scanFlags = scanFlags | CharType.MultiUnitChar;
+        break;
+      }
+      const charFlags = AsciiLookup[state.currentChar];
+      scanFlags = scanFlags | charFlags;
+      if (scanFlags & (CharType.Backslash | CharType.WhiteSpace)) break;
       nextChar(state);
     }
 
     state.tokenValue = state.source.slice(state.startIndex, state.index);
 
-    if ((scanFlags & CharType.MultiUnitChar) !== CharType.MultiUnitChar) {
-      if ((scanFlags & CharType.CannotBeAKeyword) === CharType.CannotBeAKeyword) {
+    if ((scanFlags & CharType.MultiUnitChar) < 1) {
+      if (scanFlags & CharType.CannotBeAKeyword) {
         return Token.Identifier;
       }
-
+      // All keywords are of length 2 ≥ length ≥ 10, so we optimize for that
       const len = state.tokenValue.length;
       if (len >= 2 && len <= 11) {
         const keyword: Token | undefined = descKeywordTable[state.tokenValue];
@@ -65,7 +69,7 @@ export function scanIdentifierOrKeyword(state: ParserState, context: Context): T
       return Token.Identifier;
     }
   }
-  return scanIdentifierOrKeywordSlowPath(state, context, state.tokenValue, scanFlags);
+  return scanIdentifierOrKeywordSlowPath(state, context, scanFlags);
 }
 
 /**
@@ -77,21 +81,16 @@ export function scanIdentifierOrKeyword(state: ParserState, context: Context): T
  * @param {CharType} scanFlags
  * @returns {Token}
  */
-function scanIdentifierOrKeywordSlowPath(
-  state: ParserState,
-  context: Context,
-  res: string,
-  scanFlags: CharType
-): Token {
+function scanIdentifierOrKeywordSlowPath(state: ParserState, context: Context, scanFlags: CharType): Token {
   let marker = state.index;
   while (state.index < state.length) {
     // Note: We could check if the 5th bit is set and the 7th bit is unset as we do in
     // string literal scanning, but this is already a "slow path"
     if (AsciiLookup[state.currentChar] & CharType.Backslash) {
-      res += state.source.substring(marker, state.index);
+      state.tokenValue += state.source.substring(marker, state.index);
       const cookedChar = scanIdentifierUnicodeEscape(state);
       if (!isIdentifierPart(cookedChar)) return Token.Invalid;
-      res += fromCodePoint(cookedChar);
+      state.tokenValue += fromCodePoint(cookedChar);
       marker = state.index;
     } else if (isIdentifierPart(state.currentChar)) {
       nextChar(state);
@@ -99,7 +98,8 @@ function scanIdentifierOrKeywordSlowPath(
       break;
     }
   }
-  state.tokenValue = res += state.source.substring(marker, state.index);
+
+  state.tokenValue += state.source.substring(marker, state.index);
 
   const length = state.tokenValue.length;
 
