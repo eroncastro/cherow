@@ -40,20 +40,12 @@ export function scanPrivatemame(state: ParserState, context: Context): Token {
 export function scanIdentifierOrKeyword(state: ParserState, context: Context): Token {
   let scanFlags = CharType.None;
   if (state.currentChar <= 0x7f) {
-    scanFlags = AsciiLookup[state.currentChar];
-    while (state.index < state.length) {
-      // We can't really prevent it if someone put a non-ascii character in the middle of their
-      // identifier, so we need this extra check here :(
-      if (state.currentChar > 0x7f) {
-        scanFlags = scanFlags | CharType.MultiUnitChar;
-        break;
-      }
-      const charFlags = AsciiLookup[state.currentChar];
-      scanFlags = scanFlags | charFlags;
-      if (scanFlags & (CharType.Backslash | CharType.WhiteSpace)) break;
+    while (AsciiLookup[state.currentChar] & (CharType.IDStart | CharType.Decimal)) {
+      scanFlags = scanFlags | AsciiLookup[state.currentChar];
       nextChar(state);
     }
 
+    if (state.index < state.length) scanFlags = scanFlags | AsciiLookup[state.currentChar];
     state.tokenValue = state.source.slice(state.startIndex, state.index);
 
     if ((scanFlags & CharType.MultiUnitChar) < 1) {
