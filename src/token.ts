@@ -179,12 +179,12 @@ export const enum Token {
 
   PrivateName  = 120 | IsIdentifier,
   BigIntLiteral  = 121 | IsIdentifier,
-  CarriageReturn  = 122 | WhiteSpace,
-  LineFeed  = 123 | WhiteSpace,
-  Tab  = 124 | WhiteSpace,
-  VerticalTab  = 125 | WhiteSpace,
-  FormFeed  = 126 | WhiteSpace,
-  Space  = 127 | WhiteSpace,
+  CarriageReturn  = 122,
+  LineFeed  = 123,
+  Tab  = 124,
+  VerticalTab  = 125,
+  FormFeed  = 126,
+  Space  = 127,
 }
 
 export const KeywordDescTable = [

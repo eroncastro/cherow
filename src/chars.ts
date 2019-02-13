@@ -8,12 +8,12 @@ export const enum CharType {
   KeywordCandidate = 1 << 3,
   CannotBeAKeyword = 1 << 4,
   Exponent = 1 << 5,
-  SlowPath = 1 << 6,
+  MultiUnitChar = 1 << 6,
   LineTerminator = 1 << 7,
   Quote = 1 << 8,
   WhiteSpace = 1 << 9 | LineTerminator,
   Letters = IDContinue | IDStart,
-  Backslash = SlowPath,
+  Backslash = MultiUnitChar,
   WhiteSpaceOrLineTerminator = WhiteSpace | LineTerminator
 }
 
@@ -30,7 +30,7 @@ export const AsciiLookup = new Int8Array(0x80)
   .fill(CharType.Exponent, 0x2B, 0x2C) /* + */
   .fill(CharType.Exponent, 0x2D, 0x2E) /* - */
   .fill(CharType.Letters, 0x24, 0x25) /* $ */
-  .fill(CharType.SlowPath , 0x5C, 0x5D) /* \ */
+  .fill(CharType.MultiUnitChar , 0x5C, 0x5D) /* \ */
   .fill(CharType.Decimal, 0x30, 0x3a) /* 0 - 9 */
   .fill(CharType.Letters | CharType.CannotBeAKeyword, 0x41, 0x5b) /* A-Z */
   .fill(CharType.Letters, 0x5f, 0x60) /* _ */

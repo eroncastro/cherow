@@ -40,6 +40,8 @@ describe('lexer - numbers', () => {
   }
 
   //fail('fails on \\u003B;', '\\u003B;', Context.None);
+
+  fail('fails on 😍', '😍', Context.OptionsNext);
   fail('fails on #foo123', '#foo123', Context.OptionsNext);
   fail('fails on #f oo', '#f oo', Context.OptionsNext);
   fail('fails on @', '@', Context.OptionsNext);
@@ -58,6 +60,233 @@ describe('lexer - numbers', () => {
   fail('fails on \\u{110000}', '\\u{110000}', Context.None);
   fail('fails on \\u0x11ffff', '\\u0x11ffff', Context.None);
   fail('fails on 🀒', '🀒', Context.None);
+
+  pass('scan identifier with underscore start', {
+    source: '_foo',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: '_foo',
+    raw: '_foo',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 4,
+    start: 0,
+    end: 4
+  });
+
+  pass('scan identifier with dollar start', {
+    source: '$foo',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: '$foo',
+    raw: '$foo',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 4,
+    start: 0,
+    end: 4
+  });
+
+  pass('scan identifier with backslash start', {
+    source: '\\u0052oo',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'Roo',
+    raw: '\\u0052oo',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 8,
+    start: 0,
+    end: 8
+  });
+
+  pass('scan identifier with russian letter - backslash start', {
+    source: '\\u0431',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'б',
+    raw: '\\u0431',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 6,
+    start: 0,
+    end: 6
+  });
+
+  pass('scan identifier with russian letter - backslash start', {
+    source: '\\u044D',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'э',
+    raw: '\\u044D',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 6,
+    start: 0,
+    end: 6
+  });
+
+  pass('scan identifier with backslash middle', {
+    source: 't\\u0061rget',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'target',
+    raw: 't\\u0061rget',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 11,
+    start: 0,
+    end: 11
+  });
+
+  pass('scan escaped contextual keyword', {
+    source: '\\u0061sync',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'async',
+    raw: '\\u0061sync',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 10,
+    start: 0,
+    end: 10
+  });
+
+  pass('scan "yield" contextual keyword', {
+    source: 'yield',
+    ctx: Context.OptionsNext,
+    token: Token.YieldKeyword,
+    value: 'yield',
+    raw: 'yield',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 5,
+    start: 0,
+    end: 5
+  });
+
+  pass('scan uppercase and ignore whitespace at the end', {
+    source: 'A ',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'A',
+    raw: 'A',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 1,
+    start: 0,
+    end: 1
+  });
+
+  pass('scan uppercase and skip whitespace at the begining', {
+    source: ' A',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'A',
+    raw: 'A',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 2,
+    start: 0,
+    end: 2
+  });
+
+  pass('scan upper and lower case letter', {
+    source: 'eF',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'eF',
+    raw: 'eF',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 2,
+    start: 0,
+    end: 2
+  });
+
+  pass('scan chinese escaped identifier', {
+    source: '\\u{4fff}',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: '俿',
+    raw: '\\u{4fff}',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 8,
+    start: 0,
+    end: 8
+  });
+
+  pass('scan chinese escaped identifier', {
+    source:
+      '\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: '俿Ͽ俿Ͽ俿Ͽ俿Ͽ俿Ͽ俿Ͽ俿Ͽ',
+    raw:
+      '\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff\\u{4fff}\\u03ff',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 98,
+    start: 0,
+    end: 98
+  });
+
+  pass('scan identifier with crazy letter - backslash start', {
+    source: 'a\\u{0000000000000000000071}c',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'aqc',
+    raw: 'a\\u{0000000000000000000071}c',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 28,
+    start: 0,
+    end: 28
+  });
+
+  pass('scan identifier with crazy letter - backslash start', {
+    source: '\\u0451',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'ё',
+    raw: '\\u0451',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 6,
+    start: 0,
+    end: 6
+  });
 
   pass('scan identifier with new line', {
     source: 'foo\n',

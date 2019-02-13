@@ -38,29 +38,33 @@ export function scanPrivatemame(state: ParserState, context: Context): Token {
  * @returns {Token}
  */
 export function scanIdentifierOrKeyword(state: ParserState, context: Context): Token {
-  let scanFlags = AsciiLookup[state.currentChar];
-  while (state.index < state.length) {
-    const charFlags = AsciiLookup[state.currentChar];
-    scanFlags = scanFlags | (state.currentChar > 127 ? CharType.SlowPath : charFlags);
-    if (scanFlags & (CharType.SlowPath | CharType.WhiteSpace)) break;
-    nextChar(state);
-  }
+  let scanFlags = CharType.None;
+  if (state.currentChar <= 0x7f) {
+    scanFlags = AsciiLookup[state.currentChar];
+    while (state.index < state.length) {
+      const charFlags = AsciiLookup[state.currentChar];
+      // We can't really prevent it if someone put a non-ascii character in the middle of their
+      // identifier, so we need this extra check here :(
+      scanFlags = scanFlags | (state.currentChar > 0x7f ? CharType.MultiUnitChar : charFlags);
+      if (scanFlags & (CharType.MultiUnitChar | CharType.WhiteSpace)) break;
+      nextChar(state);
+    }
 
-  state.tokenValue = state.source.slice(state.startIndex, state.index);
+    state.tokenValue = state.source.slice(state.startIndex, state.index);
 
-  if ((scanFlags & CharType.SlowPath) !== CharType.SlowPath) {
-    if ((scanFlags & CharType.CannotBeAKeyword) === CharType.CannotBeAKeyword) {
+    if ((scanFlags & CharType.MultiUnitChar) !== CharType.MultiUnitChar) {
+      if ((scanFlags & CharType.CannotBeAKeyword) === CharType.CannotBeAKeyword) {
+        return Token.Identifier;
+      }
+
+      const len = state.tokenValue.length;
+      if (len >= 2 && len <= 11) {
+        const keyword: Token | undefined = descKeywordTable[state.tokenValue];
+        if (keyword !== undefined) return keyword;
+      }
       return Token.Identifier;
     }
-
-    const len = state.tokenValue.length;
-    if (len >= 2 && len <= 11) {
-      const keyword: Token | undefined = descKeywordTable[state.tokenValue];
-      if (keyword !== undefined) return keyword;
-    }
-    return Token.Identifier;
   }
-
   return scanIdentifierOrKeywordSlowPath(state, context, state.tokenValue, scanFlags);
 }
 
@@ -95,7 +99,6 @@ function scanIdentifierOrKeywordSlowPath(
       break;
     }
   }
-
   state.tokenValue = res += state.source.substring(marker, state.index);
 
   const length = state.tokenValue.length;

@@ -10,44 +10,107 @@ import { reportAt, Errors } from '../errors';
 import { isIdentifierStart } from '../unicode';
 import { skipSingleLineComment, skipMultilineComment } from './comments';
 
+/*
+// NOTE! (fkleuver) This code is here so you can see how I generated the table below
+
+const oneCharTokens = new Array(128).fill(0) as Token[];
+oneCharTokens[Chars.Comma] = Token.Comma;
+oneCharTokens[Chars.QuestionMark] = Token.QuestionMark;
+oneCharTokens[Chars.LeftBracket] = Token.LeftBracket;
+oneCharTokens[Chars.RightBracket] = Token.RightBracket;
+oneCharTokens[Chars.LeftBrace] = Token.LeftBrace;
+oneCharTokens[Chars.RightBrace] = Token.RightBrace;
+oneCharTokens[Chars.Tilde] = Token.Complement;
+oneCharTokens[Chars.LeftParen] = Token.LeftParen;
+oneCharTokens[Chars.RightParen] = Token.RightParen;
+oneCharTokens[Chars.Colon] = Token.Colon;
+oneCharTokens[Chars.Semicolon] = Token.Semicolon;
+oneCharTokens[Chars.Hash] = Token.PrivateName;
+oneCharTokens[Chars.VerticalBar] = Token.BitwiseOr;
+oneCharTokens[Chars.Caret] = Token.BitwiseXor;
+oneCharTokens[Chars.EqualSign] = Token.Assign;
+oneCharTokens[Chars.GreaterThan] = Token.GreaterThan;
+oneCharTokens[Chars.Hyphen] = Token.Subtract;
+oneCharTokens[Chars.LessThan] = Token.LessThan;
+oneCharTokens[Chars.Plus] = Token.Add;
+oneCharTokens[Chars.Asterisk] = Token.Multiply;
+oneCharTokens[Chars.Ampersand] = Token.BitwiseAnd;
+oneCharTokens[Chars.Period] = Token.Period;
+oneCharTokens[Chars.Percent] = Token.Modulo;
+oneCharTokens[Chars.Exclamation] = Token.Negate;
+oneCharTokens[Chars.Slash] = Token.Divide;
+oneCharTokens[Chars.Space] = Token.Space;
+oneCharTokens[Chars.VerticalTab] = Token.VerticalTab;
+oneCharTokens[Chars.Tab] = Token.Tab;
+oneCharTokens[Chars.LineFeed] = Token.LineFeed;
+oneCharTokens[Chars.CarriageReturn] = Token.CarriageReturn;
+oneCharTokens[Chars.FormFeed] = Token.FormFeed;
+oneCharTokens[Chars.SingleQuote] = Token.StringLiteral;
+oneCharTokens[Chars.DoubleQuote] = Token.StringLiteral;
+oneCharTokens[Chars.Backslash] = Token.Identifier;
+oneCharTokens[Chars.Underscore] = Token.Identifier;
+oneCharTokens[Chars.Dollar] = Token.Identifier;
+oneCharTokens[Chars.Backtick] = Token.Template;
+oneCharTokens[Chars.Zero] = Token.NumericLiteral;
+oneCharTokens[Chars.One] = Token.NumericLiteral;
+oneCharTokens[Chars.Two] = Token.NumericLiteral;
+oneCharTokens[Chars.Three] = Token.NumericLiteral;
+oneCharTokens[Chars.Four] = Token.NumericLiteral;
+oneCharTokens[Chars.Five] = Token.NumericLiteral;
+oneCharTokens[Chars.Six] = Token.NumericLiteral;
+oneCharTokens[Chars.Seven] = Token.NumericLiteral;
+oneCharTokens[Chars.Eight] = Token.NumericLiteral;
+oneCharTokens[Chars.Nine] = Token.NumericLiteral;
+
+// `A`...`Z`
+for (let i = Chars.UpperA; i <= Chars.UpperZ; i++) {
+  oneCharTokens[i] = Token.Identifier;
+}
+
+// `a`...`z`
+for (let i = Chars.LowerA; i <= Chars.LowerZ; i++) {
+  oneCharTokens[i] = Token.Identifier;
+}
+*/
+
 const tableLookup = [
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  268435580,
-  268435579,
-  268435581,
-  268435582,
-  268435578,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  1073741824,
-  268435583,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  124,
+  123,
+  125,
+  126,
+  122,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  127,
   16842799,
   536936451,
   196728,
-  1073741824,
+  196609,
   8456758,
   8455494,
   536936451,
@@ -75,7 +138,7 @@ const tableLookup = [
   2097183,
   8456002,
   24,
-  1073741824,
+  0,
   196609,
   196609,
   196609,
@@ -106,7 +169,7 @@ const tableLookup = [
   196609,
   22,
   8455240,
-  1073741824,
+  196609,
   4259840,
   196609,
   196609,
@@ -138,7 +201,7 @@ const tableLookup = [
   8454983,
   17,
   16842800,
-  1073741824
+  0
 ];
 
 /**
