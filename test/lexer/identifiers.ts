@@ -61,6 +61,21 @@ describe('lexer - numbers', () => {
   fail('fails on \\u0x11ffff', '\\u0x11ffff', Context.None);
   fail('fails on 🀒', '🀒', Context.None);
 
+  pass('scan surrogate pair end', {
+    source: 'a𐊧',
+    ctx: Context.OptionsNext,
+    token: Token.Identifier,
+    value: 'a𐊧',
+    raw: '_foo',
+    octalPos: undefined,
+    octalMessage: undefined,
+    newline: false,
+    line: 1,
+    column: 2,
+    start: 0,
+    end: 3
+  });
+
   pass('scan identifier with underscore start', {
     source: '_foo',
     ctx: Context.OptionsNext,

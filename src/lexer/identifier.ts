@@ -1,10 +1,10 @@
 import { Token, descKeywordTable } from '../token';
 import { reportAt, Errors } from '../errors';
-import { isIdentifierPart } from '../unicode';
+import { isIdentifierPart, isIdentifierStart } from '../unicode';
 import { Chars, CharType, AsciiLookup } from '../chars';
 import { Context } from '../common';
 import { ParserState } from '../common';
-import { fromCodePoint, Escape, nextChar, toHex } from './common';
+import { fromCodePoint, Escape, nextChar, toHex, getMostLikelyUnicodeChar } from './common';
 
 /**
  * Scans private name
@@ -40,27 +40,32 @@ export function scanPrivatemame(state: ParserState, context: Context): Token {
 export function scanIdentifierOrKeyword(state: ParserState, context: Context): Token {
   let scanFlags = CharType.None;
   if (state.currentChar <= 0x7f) {
-    while (AsciiLookup[state.currentChar] & (CharType.IDStart | CharType.Decimal)) {
-      scanFlags = scanFlags | AsciiLookup[state.currentChar];
-      nextChar(state);
-    }
+    if ((AsciiLookup[state.currentChar] & CharType.Backslash) < 1) {
+      while (AsciiLookup[state.currentChar] & (CharType.IDStart | CharType.Decimal)) {
+        scanFlags = scanFlags | AsciiLookup[state.currentChar];
+        nextChar(state);
+      }
 
-    if (state.index < state.length) scanFlags = scanFlags | AsciiLookup[state.currentChar];
-    state.tokenValue = state.source.slice(state.startIndex, state.index);
+      if (state.index < state.length)
+        scanFlags = scanFlags | (state.currentChar > 127 ? CharType.MultiUnitChar : AsciiLookup[state.currentChar]);
 
-    if ((scanFlags & CharType.MultiUnitChar) < 1) {
-      if (scanFlags & CharType.CannotBeAKeyword) {
+      state.tokenValue = state.source.slice(state.startIndex, state.index);
+
+      if ((scanFlags & CharType.MultiUnitChar) < 1) {
+        if (scanFlags & CharType.CannotBeAKeyword) {
+          return Token.Identifier;
+        }
+        // All keywords are of length 2 ≥ length ≥ 10, so we optimize for that
+        const len = state.tokenValue.length;
+        if (len >= 2 && len <= 11) {
+          const keyword: Token | undefined = descKeywordTable[state.tokenValue];
+          if (keyword !== undefined) return keyword;
+        }
         return Token.Identifier;
       }
-      // All keywords are of length 2 ≥ length ≥ 10, so we optimize for that
-      const len = state.tokenValue.length;
-      if (len >= 2 && len <= 11) {
-        const keyword: Token | undefined = descKeywordTable[state.tokenValue];
-        if (keyword !== undefined) return keyword;
-      }
-      return Token.Identifier;
     }
   }
+
   return scanIdentifierOrKeywordSlowPath(state, context, scanFlags);
 }
 
@@ -75,6 +80,7 @@ export function scanIdentifierOrKeyword(state: ParserState, context: Context): T
  */
 function scanIdentifierOrKeywordSlowPath(state: ParserState, context: Context, scanFlags: CharType): Token {
   let marker = state.index;
+
   while (state.index < state.length) {
     // Note: We could check if the 5th bit is set and the 7th bit is unset as we do in
     // string literal scanning, but this is already a "slow path"
@@ -84,10 +90,16 @@ function scanIdentifierOrKeywordSlowPath(state: ParserState, context: Context, s
       if (!isIdentifierPart(cookedChar)) return Token.Invalid;
       state.tokenValue += fromCodePoint(cookedChar);
       marker = state.index;
-    } else if (isIdentifierPart(state.currentChar)) {
-      nextChar(state);
     } else {
-      break;
+      if (state.currentChar >= 0xd800 && state.currentChar <= 0xdbff) {
+        const lo = state.source.charCodeAt(state.index + 1);
+        if (lo >= 0xdc00 && lo <= 0xdfff) {
+          state.currentChar = ((state.currentChar & 0x3ff) << 10) | (lo & 0x3ff) | 0x10000;
+          state.index++;
+        }
+      }
+      if (!isIdentifierPart(state.currentChar)) return Token.Invalid;
+      nextChar(state);
     }
   }
 

@@ -2,7 +2,7 @@ import { Chars, CharType, AsciiLookup } from './chars';
 
 /*@internal*/
 export function isIdentifierPart(code: Chars): boolean {
-  return (AsciiLookup[code] & CharType.IDContinue) > 0 || ((unicodeLookup[(code >>> 5) + 0] >>> code) & 31 & 1) > 0;
+  return (AsciiLookup[code] & CharType.IDContinue) > 0 || ((unicodeLookup[(code >>> 5) + 0] >>> code) & 31 & 1) !== 0;
 }
 
 /*@internal*/

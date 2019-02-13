@@ -39,10 +39,8 @@ export function advance(state: ParserState): void {
  * @param {ParserState} state
  */
 export function nextChar(state: ParserState): void {
-  state.currentChar = 0;
   state.column++;
-  state.index++;
-  if (state.index <= state.length) state.currentChar = state.source.charCodeAt(state.index);
+  state.currentChar = state.source.charCodeAt(++state.index);
 }
 
 /**
@@ -51,13 +49,12 @@ export function nextChar(state: ParserState): void {
  * @param {ParserState} state
  */
 export function getMostLikelyUnicodeChar(state: ParserState): void {
-  const hi = state.source.charCodeAt(state.index++);
-  state.currentChar = hi;
+  state.currentChar = state.source.charCodeAt(state.index++);
   if (state.currentChar >= 0xd800 && state.currentChar <= 0xdbff) {
     const lo = state.source.charCodeAt(state.index);
     // Check if it's a low surrogate
     if (lo >= 0xdc00 && lo <= 0xdfff) {
-      state.currentChar = ((hi & 0x3ff) << 10) | (lo & 0x3ff) | 0x10000;
+      state.currentChar = ((state.currentChar & 0x3ff) << 10) | (lo & 0x3ff) | 0x10000;
       state.index++;
     }
   }
