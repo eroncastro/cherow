@@ -19,7 +19,10 @@ export function scanNumericLiterals(state: ParserState, context: Context, type: 
   let isNotFloat = (type & ScannerFlags.IsFloat) === 0;
   const marker = state.index;
   let leadingErrPos = marker;
-
+  
+  // Reset
+  state.tokenValue = '';
+  
   if ((type & ScannerFlags.IsFloat) === 0) {
     if (state.currentChar === Chars.Zero) {
       nextChar(state);
