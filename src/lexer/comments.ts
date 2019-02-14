@@ -1,7 +1,7 @@
 import { ParserState, Context, Flags } from '../common';
 import { Chars } from '../chars';
 import { report, Errors } from '../errors';
-import { ScannerFlags, nextChar, advance } from './common';
+import { ScannerFlags, nextChar } from './common';
 
 /**
  * Skips hashbang - Stage 3 proposal
@@ -46,7 +46,7 @@ export function skipSingleLineComment(state: ParserState, type: ScannerFlags): S
         return (type |= ScannerFlags.NewLine);
       }
     }
-    advance(state);
+    nextChar(state);
   }
 
   return type;
@@ -93,7 +93,7 @@ export function skipMultilineComment(state: ParserState, type: ScannerFlags): an
       }
     } else {
       type = type & ~ScannerFlags.LastIsCR;
-      advance(state);
+      nextChar(state);
     }
   }
   // Unterminated multi-line comment.
