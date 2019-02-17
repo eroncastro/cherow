@@ -80,7 +80,7 @@ export function parseAssignmentExpression(
     left = parseBinaryExpression(state, context, 4, left);
   }
 
-  if (consumeOpt(state, context, Token.QuestionMark)) {
+  if (optional(state, context, Token.QuestionMark)) {
     left = parseConditionalExpression(state, context, left);
   }
 
@@ -100,9 +100,9 @@ export function parseConditionalExpression(
   context: Context,
   test: ESTree.Expression
 ): ESTree.ConditionalExpression {
-  const consequent: ESTree.Expression = parseExpression(state, context, /* isAssignable */ true);
+  const consequent: ESTree.Expression = parseExpression(state, context);
   expect(state, context, Token.Colon);
-  const alternate: ESTree.Expression = parseExpression(state, context, /* isAssignable */ true);
+  const alternate: ESTree.Expression = parseExpression(state, context);
   return {
     type: 'ConditionalExpression',
     test,
@@ -169,16 +169,48 @@ export function parseYieldExpression(
  * @param {Context} context
  * @returns {(ESTree.ArrowFunctionExpression | ESTree.LabeledStatement | ESTree.AssignmentExpression)}
  */
+/**
+ * Parse await expression
+ *
+ * @param {ParserState} state
+ * @param {Context} context
+ * @returns {(ESTree.ArrowFunctionExpression | ESTree.LabeledStatement | ESTree.AssignmentExpression)}
+ */
 export function parseAwaitExpression(
   state: ParserState,
-  context: Context
-): ESTree.ArrowFunctionExpression | ESTree.LabeledStatement | ESTree.AssignmentExpression {
+  context: Context,
+  isNew: boolean
+): ESTree.Identifier | ESTree.ArrowFunctionExpression {
   let expr = parseIdentifier(state, context);
-  return state.token === Token.Arrow
-    ? parseNonParenthesizedArrow(state, context, expr)
-    : optional(state, context, Token.Colon)
-    ? parseLabelledStatement(state, context, expr)
-    : parseAssignmentExpression(state, context, true, parseMemberExpression(state, context, expr));
+  if (context & Context.InAwaitContext) {
+    if (isNew) report(state, Errors.AwaitInParameter);
+    // For correct error location, we must subtract 5 (the length of await keyword) and add 2 for space.
+    // So we end up with 7, and this formula (state.index - 7) for correct column position.
+    if (context & Context.InArgList) reportAt(state, state.index, state.line, state.index - 7, Errors.AwaitInParameter);
+    state.assignable = false;
+    const argument = parseMemberExpression(
+      state,
+      context,
+      parsePrimaryExpressionExtended(state, context, false),
+      false
+    );
+    return {
+      type: 'AwaitExpression',
+      argument
+    } as any;
+  }
+  state.assignable = true;
+  //if (consumeOpt(state, context, Token.Colon)) return parseLabelledStatement(state, context, expr);
+  if (state.token === Token.Arrow) {
+    // '[await][no LineTerminator here]=>ConciseBody[?In]'
+    // '[await][no LineTerminator here]=>{FunctionBody[~Yield, ~Await]}'
+    if (state.flags & Flags.PrecedingLineBreak) report;
+    if (!state.assignable) report;
+    if (context & (Context.InYieldContext | Context.InAwaitContext) && state.token === Token.YieldKeyword) report;
+    return parseNonParenthesizedArrow(state, context, expr);
+  }
+
+  return parseMemberExpression(state, context, expr, false);
 }
 
 /**
