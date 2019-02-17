@@ -15,7 +15,7 @@ import { Escape, nextChar, toHex, fromCodePoint } from './common';
 export function scanStringLiteral(state: ParserState, context: Context): Token | void {
   const quote = state.currentChar;
   nextChar(state); // consume quote
-
+  state.tokenValue = '';
   let marker = state.index;
 
   while (state.index < state.length) {

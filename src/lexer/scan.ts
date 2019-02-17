@@ -325,6 +325,8 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
               if (index < state.length && state.source.charCodeAt(index) === Chars.Period) {
                 state.index = index + 1;
                 state.column += 3;
+                // fixes '[...a]'
+                state.currentChar = state.source.charCodeAt(state.index);
                 return Token.Ellipsis;
               }
             } else if (AsciiLookup[next] & CharType.Decimal) {
