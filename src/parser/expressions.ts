@@ -200,7 +200,6 @@ export function parseAwaitExpression(
     } as any;
   }
   state.assignable = true;
-  //if (consumeOpt(state, context, Token.Colon)) return parseLabelledStatement(state, context, expr);
   if (state.token === Token.Arrow) {
     // '[await][no LineTerminator here]=>ConciseBody[?In]'
     // '[await][no LineTerminator here]=>{FunctionBody[~Yield, ~Await]}'
