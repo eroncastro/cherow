@@ -46,34 +46,41 @@ export function parseSequenceExpression(
  *
  * @param {ParserState} state
  * @param {Context} context
- * @param {boolean} isAssignable
  * @param {(ESTree.LogicalExpression | ESTree.BinaryExpression | ESTree.Identifier | ESTree.ConditionalExpression)} left
  * @returns {(ESTree.AssignmentExpression | ESTree.Expression)}
  */
 export function parseAssignmentExpression(
   state: ParserState,
   context: Context,
-  isAssignable: boolean,
   left: ESTree.LogicalExpression | ESTree.BinaryExpression | ESTree.Identifier | ESTree.ConditionalExpression
 ): ESTree.AssignmentExpression | ESTree.Expression {
-  if ((state.token & Token.IsAssignOp) === Token.IsAssignOp) {
-    if (!isAssignable) report(state, Errors.InvalidLHS);
+  // AssignmentExpression ::
+  //   ConditionalExpression
+  //   ArrowFunction
+  //   YieldExpression
+  //   LeftHandSideExpression AssignmentOperator AssignmentExpression
+  if ((state.token & Token.IsAssignOp) > 0) {
+    if (!state.assignable) report(state, Errors.InvalidLHS);
     const operator = state.token;
-    nextToken(state, context);
+    if (state.token === Token.Assign) {
+      if ((left.type as string) === 'ArrayExpression' || (left.type as string) === 'ObjectExpression') {
+        reinterpretToPattern(left);
+      }
+    }
+    nextToken(state, context | Context.AllowRegExp);
     return {
       type: 'AssignmentExpression',
       left,
       operator: KeywordDescTable[operator & Token.Type] as ESTree.AssignmentOperator,
-      right: parseExpression(state, context, /* isAssignable */ true)
+      right: parseExpression(state, context)
     };
   }
 
-  if (state.token & Token.IsBinaryOp) {
-    left = parseBinaryExpression(state, context, 0, left);
-    if (state.token === Token.Assign) report(state, Errors.InvalidLHS);
+  if ((state.token & Token.IsBinaryOp) > 0) {
+    left = parseBinaryExpression(state, context, 4, left);
   }
 
-  if (optional(state, context, Token.QuestionMark)) {
+  if (consumeOpt(state, context, Token.QuestionMark)) {
     left = parseConditionalExpression(state, context, left);
   }
 
