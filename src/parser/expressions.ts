@@ -52,41 +52,76 @@ export function parseSequenceExpression(
 export function parseAssignmentExpression(
   state: ParserState,
   context: Context,
-  left: ESTree.LogicalExpression | ESTree.BinaryExpression | ESTree.Identifier | ESTree.ConditionalExpression
+  left:
+    | ESTree.AssignmentExpression
+    | ESTree.LogicalExpression
+    | ESTree.BinaryExpression
+    | ESTree.Identifier
+    | ESTree.ConditionalExpression
 ): ESTree.AssignmentExpression | ESTree.Expression {
-  // AssignmentExpression ::
-  //   ConditionalExpression
-  //   ArrowFunction
-  //   YieldExpression
-  //   LeftHandSideExpression AssignmentOperator AssignmentExpression
-  if ((state.token & Token.IsAssignOp) > 0) {
-    if (!state.assignable) report(state, Errors.InvalidLHS);
+  const { assignable } = state;
+
+  /** AssignmentExpression
+   *
+   * https://tc39.github.io/ecma262/#prod-AssignmentExpression
+   *
+   * AssignmentExpression ::
+   *   ConditionalExpression
+   *   ArrowFunction
+   *   YieldExpression
+   *   LeftHandSideExpression AssignmentOperator AssignmentExpression
+   */
+  if (state.assignable & AssignmentState.Assignable && (state.token & Token.IsAssignOp) > 0) {
     const operator = state.token;
     if (state.token === Token.Assign) {
       if ((left.type as string) === 'ArrayExpression' || (left.type as string) === 'ObjectExpression') {
-        reinterpretToPattern(left);
+        reinterpretToPattern(state, left);
       }
     }
     nextToken(state, context | Context.AllowRegExp);
-    return {
+    state.assignable = AssignmentState.Assignable;
+
+    left = {
       type: 'AssignmentExpression',
       left,
       operator: KeywordDescTable[operator & Token.Type] as ESTree.AssignmentOperator,
       right: parseExpression(state, context)
     };
+
+    // Resets destructibility
+    state.assignable =
+      ((state.assignable | DestructuringState.NotDestructible | DestructuringState.Assignable) ^ (DestructuringState.NotDestructible | DestructuringState.Assignable)) |
+      ((assignable | AssignmentState.NotAssignable | AssignmentState.Assignable) ^
+        (AssignmentState.NotAssignable | AssignmentState.Assignable));
+
+    return left;
   }
 
+ /** BinaryExpression
+   *
+   * https://tc39.github.io/ecma262/#sec-multiplicative-operators
+   *
+   */
   if ((state.token & Token.IsBinaryOp) > 0) {
+    // We start using the binary expression parser for prec >= 4 only!
     left = parseBinaryExpression(state, context, 4, left);
+    state.assignable =
+      (state.assignable | assignable | AssignmentState.Assignable | AssignmentState.NotAssignable) ^ AssignmentState.Assignable;
   }
 
+  /**
+   * ConditionalExpression
+   * https://tc39.github.io/ecma262/#prod-ConditionalExpression
+   *
+   */
   if (optional(state, context, Token.QuestionMark)) {
     left = parseConditionalExpression(state, context, left);
+    state.assignable =
+      (state.assignable | assignable | AssignmentState.Assignable | AssignmentState.NotAssignable) ^ AssignmentState.Assignable;
   }
 
   return left;
 }
-
 /**
  * Parse conditional expression
  *
