@@ -159,21 +159,41 @@ export function parseBinaryExpression(
   state: ParserState,
   context: Context,
   minPrec: number,
-  left: ESTree.BinaryExpression | ESTree.LogicalExpression | ESTree.Identifier | ESTree.ConditionalExpression
-): ESTree.LogicalExpression | ESTree.BinaryExpression | ESTree.Identifier | ESTree.ConditionalExpression {
+  left:
+    | ESTree.AssignmentExpression
+    | ESTree.BinaryExpression
+    | ESTree.LogicalExpression
+    | ESTree.Identifier
+    | ESTree.ConditionalExpression
+):
+  | ESTree.AssignmentExpression
+  | ESTree.LogicalExpression
+  | ESTree.BinaryExpression
+  | ESTree.Identifier
+  | ESTree.ConditionalExpression {
   const bit = -((context & Context.DisallowInContext) > 0) & Token.InKeyword;
+  let t: Token;
+  let prec: number;
+  let assignable = AssignmentState.NotAssignable;
   while ((state.token & Token.IsBinaryOp) > 0) {
-    const opToken = state.token;
-    const prec = opToken & Token.Precedence;
-    if (prec + (((opToken === Token.Exponentiate) as any) << 8) - (((bit === opToken) as any) << 12) <= minPrec) break;
+    t = state.token;
+    prec = t & Token.Precedence;
+    if (prec + (((t === Token.Exponentiate) as any) << 8) - (((bit === t) as any) << 12) <= minPrec) break;
     nextToken(state, context | Context.AllowRegExp);
     left = {
-      type: opToken & Token.IsLogical ? 'LogicalExpression' : 'BinaryExpression',
+      type: t & Token.IsLogical ? 'LogicalExpression' : 'BinaryExpression',
       left,
       right: parseBinaryExpression(state, context, prec, parseLeftHandSide(state, context)),
-      operator: KeywordDescTable[opToken & Token.Type] as ESTree.LogicalOperator
+      operator: KeywordDescTable[t & Token.Type] as ESTree.LogicalOperator
     } as ESTree.BinaryExpression | ESTree.LogicalExpression;
+    assignable =
+      state.assignable |
+      ((assignable | AssignmentState.NotAssignable | AssignmentState.Assignable) ^
+        (AssignmentState.NotAssignable | AssignmentState.Assignable));
   }
+
+  // Set the updated assignable state
+  state.assignable = assignable;
 
   return left;
 }
