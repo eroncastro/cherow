@@ -180,10 +180,18 @@ export function parseBinaryExpression(
     prec = t & Token.Precedence;
     if (prec + (((t === Token.Exponentiate) as any) << 8) - (((bit === t) as any) << 12) <= minPrec) break;
     nextToken(state, context | Context.AllowRegExp);
+    // Note: The 'assignable' state will change during the 'expression' parsing, so this is just to
+    // prevent any assignability on RHS
+    state.assignable = AssignmentState.NotAssignable;
     left = {
       type: t & Token.IsLogical ? 'LogicalExpression' : 'BinaryExpression',
       left,
-      right: parseBinaryExpression(state, context, prec, parseLeftHandSide(state, context)),
+      right: parseBinaryExpression(
+        state,
+        context,
+        prec,
+        parseLeftHandSide(state, context | Context.DisallowAssignment)
+      ),
       operator: KeywordDescTable[t & Token.Type] as ESTree.LogicalOperator
     } as ESTree.BinaryExpression | ESTree.LogicalExpression;
     assignable =
