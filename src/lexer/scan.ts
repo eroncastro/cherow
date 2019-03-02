@@ -297,11 +297,11 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
 
         // line terminators
         case Token.LineFeed:
-          state.index++;
-          state.flags |= Flags.PrecedingLineBreak;
-          if ((type & ScannerFlags.LastIsCR) < 1) {
+        state.currentChar = state.source.charCodeAt(++state.index);
+        state.flags |= Flags.PrecedingLineBreak;
+        if ((type & ScannerFlags.LastIsCR) < 1) {
             state.column = 0;
-            state.line++;
+            ++state.line;
           }
           type = (type & ~ScannerFlags.LastIsCR) | ScannerFlags.NewLine;
           break;
@@ -309,9 +309,9 @@ export function scanSingleToken(state: ParserState, context: Context): Token | v
         case Token.CarriageReturn:
           type |= ScannerFlags.NewLine | ScannerFlags.LastIsCR;
           state.flags |= Flags.PrecedingLineBreak;
-          state.index++;
+          state.currentChar = state.source.charCodeAt(++state.index);
           state.column = 0;
-          state.line++;
+          ++state.line;
           break;
 
         // `.`, `...`, `.123` (numeric literal)
