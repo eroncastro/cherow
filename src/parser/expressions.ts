@@ -555,3 +555,28 @@ export function parseThisExpression(state: ParserState, context: Context): ESTre
     type: 'ThisExpression'
   };
 }
+
+/**
+ * Parses new or new target expression
+ *
+ * @param {ParserState} state
+ * @param {Context} context
+ * @returns {(ESTree.Expression | ESTree.MetaProperty)}
+ */
+export function parseNewExpression(state: ParserState, context: Context): ESTree.Expression | ESTree.MetaProperty {
+  const id = parseIdentifier(state, context | Context.AllowRegExp);
+  if (consumeOpt(state, context, Token.Period)) {
+    if ((context & Context.AllowNewTarget) < 1 || state.tokenValue !== 'target') report(state, Errors.Unexpected);
+    parseMetaProperty(state, context, id);
+  }
+  return parseAssignmentExpression(
+    state,
+    context,
+    parseMemberExpression(
+      state,
+      context,
+      parsePrimaryExpressionExtended(state, context, false, /* isNew*/ true),
+      /* isNew*/ true
+    )
+  );
+}
