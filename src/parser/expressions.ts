@@ -580,3 +580,149 @@ export function parseNewExpression(state: ParserState, context: Context): ESTree
     )
   );
 }
+
+/**
+ * Parses member or update expression
+ *
+ * @param {ParserState} state
+ * @param {Context} context
+ * @param {ESTree.Expression} expr
+ * @returns {*}
+ */
+export function parseMemberOrUpdateExpression(
+  state: ParserState,
+  context: Context,
+  expr: ESTree.Expression,
+  isNew: boolean
+): any {
+  /** parseUpdateExpression
+   *
+   * https://tc39.github.io/ecma262/#prod-asi-rules-UpdateExpression
+   *
+   *  UpdateExpression ::
+   *   ('++' | '--')? LeftHandSideExpression
+   *
+   */
+
+  if ((state.token & Token.IsUpdateOp) === Token.IsUpdateOp) {
+    return parseUpdateExpression(state, context, expr);
+  }
+
+  /** MemberExpression ::
+   *   1. PrimaryExpression
+   *   2. MemberExpression [ AssignmentExpression ]
+   *   3. MemberExpression . IdentifierName
+   *   4. MemberExpression TemplateLiteral
+   *   5. MemberExpression [ NewExpression ]
+   */
+  const { assignable } = state;
+
+  switch (state.token) {
+    case Token.Period: {
+      /* Property */
+      nextToken(state, context);
+      state.assignable = AssignmentState.Assignable;
+      return parseMemberOrUpdateExpression(
+        state,
+        context,
+        {
+          type: 'MemberExpression',
+          object: expr,
+          computed: false,
+          property: parseIdentifier(state, context)
+        },
+        isNew
+      );
+    }
+    case Token.LeftBracket: {
+      nextToken(state, context);
+      const property = parseExpressions(state, context);
+      state.assignable =
+        state.assignable |
+        ((assignable | AssignmentState.NotAssignable | AssignmentState.Assignable) ^
+          (AssignmentState.NotAssignable | AssignmentState.Assignable));
+
+      expr = {
+        type: 'MemberExpression',
+        object: expr,
+        computed: true,
+        property
+      };
+      consume(state, context, Token.RightBracket);
+      // Note: The 'assignable' state may have changed during the 'expression' parsing
+      state.assignable = AssignmentState.Assignable;
+      return parseMemberOrUpdateExpression(state, context, expr, isNew);
+    }
+    case Token.LeftParen: {
+      const args = parseArguments(state, context);
+      state.assignable =
+        (state.assignable |
+          ((assignable | AssignmentState.NotAssignable | AssignmentState.Assignable) ^
+            (AssignmentState.NotAssignable | AssignmentState.Assignable)) |
+          AssignmentState.Assignable |
+          AssignmentState.NotAssignable) ^
+        AssignmentState.Assignable;
+      if (isNew) {
+        /* New expression with arguments */
+        return parseMemberOrUpdateExpression(
+          state,
+          context,
+          {
+            type: 'NewExpression',
+            callee: expr,
+            arguments: args
+          },
+          false
+        );
+      } else {
+        /* Call expression  */
+        return parseMemberOrUpdateExpression(
+          state,
+          context,
+          {
+            type: 'CallExpression',
+            callee: expr,
+            arguments: args
+          },
+          isNew
+        );
+      }
+    }
+    case Token.TemplateTail: {
+      nextToken(state, context);
+      return parseMemberOrUpdateExpression(
+        state,
+        context,
+        {
+          type: 'TaggedTemplateExpression',
+          tag: expr,
+          quasi: parseTemplateLiteral(state, context)
+        } as ESTree.TaggedTemplateExpression,
+        isNew
+      );
+    }
+    case Token.TemplateContinuation: {
+      return parseMemberOrUpdateExpression(
+        state,
+        context,
+        {
+          type: 'TaggedTemplateExpression',
+          tag: expr,
+          quasi: parseTemplate(state, context)
+        },
+        isNew
+      );
+    }
+    default:
+      // New expression without arguments.
+      if (isNew) {
+        state.assignable = AssignmentState.NotAssignable;
+        return {
+          type: 'NewExpression',
+          callee: expr,
+          arguments: []
+        };
+      }
+      return expr;
+  }
+}
