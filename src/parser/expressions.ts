@@ -207,22 +207,46 @@ export function parseBinaryExpression(
 }
 
 /**
- * Parse yield expression
+ * Parse yield expression or 'yield' identifier
  *
  * @param {ParserState} state
  * @param {Context} context
- * @returns {(ESTree.ArrowFunctionExpression | ESTree.LabeledStatement | ESTree.AssignmentExpression)}
+ * @returns {(ESTree.Identifier | ESTree.YieldExpression)}
  */
-export function parseYieldExpression(
+export function parseYieldExpressionOrIdentifier(
   state: ParserState,
   context: Context
-): ESTree.ArrowFunctionExpression | ESTree.LabeledStatement | ESTree.AssignmentExpression {
-  let expr = parseIdentifier(state, context);
-  return state.token === Token.Arrow
-    ? parseNonParenthesizedArrow(state, context, expr)
-    : optional(state, context, Token.Colon)
-    ? parseLabelledStatement(state, context, expr)
-    : parseAssignmentExpression(state, context, true, parseMemberExpression(state, context, expr));
+): ESTree.Identifier | ESTree.YieldExpression {
+  // Yield as identifier
+  if ((context & Context.InYieldContext) < 1) {
+    if (context & Context.Strict) report(state, Errors.Unexpected);
+    state.assignable = AssignmentState.Assignable;
+    return parseIdentifier(state, context);
+  }
+
+  // YieldExpression ::
+  //   'yield' ([no line terminator] '*'? AssignmentExpression)?
+  nextToken(state, context | Context.AllowRegExp);
+  if (context & Context.InArgList) report(state, Errors.YieldInParameter);
+  state.flags |= Flags.SeenYield;
+  let argument: ESTree.Expression | null = null;
+  let delegate = false; // yield*
+  if ((state.flags & Flags.PrecedingLineBreak) < 1) {
+    delegate = consumeOpt(state, context, Token.Multiply);
+    // 'Token.IsExpressionStart' contains the complete set of tokens that can appear
+    // after an AssignmentExpression, and none of them can start an
+    // AssignmentExpression.
+    if (state.token & Token.IsExpressionStart || delegate) {
+      argument = parseExpression(state, context, true);
+    }
+  }
+  state.assignable = AssignmentState.NotAssignable;
+
+  return {
+    type: 'YieldExpression',
+    argument,
+    delegate
+  };
 }
 
 /**
